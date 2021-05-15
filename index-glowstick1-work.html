@@ -20,7 +20,7 @@ const VELOCITY_ON = false;
 
 
 
-function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand){
+function createTrailGlowstick(newPos, color, newRot){
 
   var sceneEl = document.querySelector('a-scene');
 
@@ -32,77 +32,133 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand){
 
   groupEl.appendChild(newEl1);
   groupEl.appendChild(newEl2);
+//https://aframe.io/docs/1.2.0/components/geometry.html
+  //<a-entity geometry="primitive: triangle" material="side: double"></a-entity>
+
   newEl1.setAttribute('color', color);
   newEl2.setAttribute('color', color);
+  
+
+  // if (newRot){
+  //   newEl.setAttribute('rotation', newRot);
+  // }
+
+  //newEl.setAttribute('geometry',"primitive: triangle;");
   newEl1.setAttribute('material','side: double; transparent: true;')
   newEl2.setAttribute('material','side: double; transparent: true;')
 
   newEl1.setAttribute('geometry', {
     primitive: 'triangle',
     vertexA: newPos,
-    vertexB: lastPos1,
-    vertexC: lastPos2
+    vertexB: last_left_1,
+    vertexC: last_left_2
   });
 
-  // var l2 = new THREE.Vector3();
-  // var left_2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(l2);
+  var l2 = new THREE.Vector3();
+  var left_2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(l2);
   newEl2.setAttribute('geometry', {
     primitive: 'triangle',
     vertexA: newPos,
-    vertexB: newPos2,
-    vertexC: lastPos2
+    vertexB: left_2,
+    vertexC: last_left_2
   });
 
 
-  newEl1.setAttribute('animation__opacity', {
-    property: 'material.opacity',
-    dur: 800,
-    easing: 'easeOutQuad',
-    to: '0'
-  })
-  newEl2.setAttribute('animation__opacity', {
-    property: 'material.opacity',
-    dur: 800,
-    easing: 'easeOutQuad',
-    to: '0'
-  })
+      newEl1.setAttribute('animation__opacity', {
+        property: 'material.opacity',
+        dur: 1000,
+        easing: 'easeOutQuad',
+        to: '0'
+      })
+      newEl2.setAttribute('animation__opacity', {
+        property: 'material.opacity',
+        dur: 1000,
+        easing: 'easeOutQuad',
+        to: '0'
+      })
 
   //Destroy old one and register new one
-
-  if (hand=="left"){
-
-    if (aParticlesLeft[iParticleLeft]){
-      var el = aParticlesLeft[iParticleLeft];
-      el.parentNode.removeChild(el);
-    }
-    aParticlesLeft[iParticleLeft] = groupEl;
-    iParticleLeft ++;
-    if (iParticleLeft>MAX_PARTICLES){
-      iParticleLeft = 0;
-    } 
-
-  }else{
-
-    if (aParticlesRight[iParticleRight]){
-      var el = aParticlesRight[iParticleRight];
-      el.parentNode.removeChild(el);
-    }
-    aParticlesRight[iParticleRight] = groupEl;
-    iParticleRight ++;
-    if (iParticleRight>MAX_PARTICLES){
-      iParticleRight = 0;
-    } 
-
+  if (aParticles[iParticle]){
+    var el = aParticles[iParticle];
+    el.parentNode.removeChild(el);
   }
-
+  aParticles[iParticle] = groupEl;
+  iParticle ++;
+  if (iParticle>MAX_PARTICLES){
+    iParticle = 0;
+  } 
 
 }
 
-    var aParticlesLeft = [];
-    var aParticlesRight = [];
-    const MAX_PARTICLES = 20;
-    var iParticleLeft = 0;
-    var iParticleRight = 0;
+    // function createTrail(newPos, color, newVel, newRot){
+
+    //   var sceneEl = document.querySelector('a-scene');
+
+    //   // var markerEl = document.querySelector('#marker');
+    //   // markerEl.setAttribute('visible', !markerEl.getAttribute('visible'));
+
+    //   var newEl = document.createElement('a-box');
+
+    //   newEl.setAttribute('color', color);
+    //   sceneEl.appendChild(newEl);
+
+    //   //material="color: #EF2DFF;"
+    //   // position.y = 0.5;// position.x = 0// position.z = 0
+    //   //newPos.y = newPos.y + 1;
+      
+    //   newEl.setAttribute('position', newPos);
+      
+    //   if (newRot){
+    //     newEl.setAttribute('rotation', newRot);
+        
+    //     //newEl.object3D.setRotationFromQuaternion(newRot)
+    //     //newEl.object3D.rotation.x += 0.5; //THIS DOES NOT WORK CORRECTLY.
+    //   }
+  
+    //   //newEl.setAttribute('scale',0.1)
+    //   newEl.object3D.scale.set(0.02,0.2,0.02);
+    //   //newEl.setAttribute('geometry',="primitive: box; height: 0.30; width: 0.30; depth: 0.30"
+
+    //   newEl.setAttribute('animation__shrink', {
+    //     property: 'scale',
+    //     dur: 3000,
+    //     easing: 'easeOutQuad',
+    //     to: '0 0 0'
+    //   })
+
+    //   if (VELOCITY_ON && newVel){
+    //     //newEl.setAttribute('velocity',newVel);
+    //     var x = newPos.x + newVel.x;
+    //     var y=  newPos.y + newVel.y;
+    //     var z= newPos.z + newVel.z;
+
+    //     //console.log("newvel: x:" + newVel.x)
+    //     newEl.setAttribute('animation__move', {
+    //       property: 'position',
+    //       dur: 2000,
+    //       easing: 'linear',
+    //       to: '' + x + ' ' + y + ' ' + z
+    //     })
+    //   }
+      
+    //   //property: position; to: 1 8 -10; dur: 2000; easing: linear; loop: true" 
+
+    //   //Destroy old one and register new one
+    //   if (aParticles[iParticle]){
+    //     var el = aParticles[iParticle];
+    //     el.parentNode.removeChild(el);
+    //   }
+    //   aParticles[iParticle] = newEl;
+    //   iParticle ++;
+    //   if (iParticle>MAX_PARTICLES){
+    //     iParticle = 0;
+    //   } 
+
+    // }
+
+    var aParticles = [];
+    const MAX_PARTICLES = 100;
+    var iParticle = 0;
 
     const VEL_FACTOR = 10;
 
@@ -265,7 +321,10 @@ AFRAME.registerComponent('button-listener-right', {
       }
 
 
-    
+      
+
+
+
       //Controllers
       var handLeft = document.querySelector('#hand-left'); 
       var posLeft = handLeft.getAttribute('position');
@@ -273,6 +332,7 @@ AFRAME.registerComponent('button-listener-right', {
       const quaternionLeft = new THREE.Quaternion();
       var rotLeft = handLeft.object3D.getWorldQuaternion(quaternionLeft);
 
+      
       var handRight = document.querySelector('#hand-right'); 
       var posRight = handRight.getAttribute('position');
       const quaternionRight = new THREE.Quaternion();
@@ -282,49 +342,61 @@ AFRAME.registerComponent('button-listener-right', {
 
       //LEFT
       if (gYButtonDown){ 
+        //createTrail(posLeft, '#FFFF00', velLeft, rotLeft)
+        //createTrail(posLeft, 'red', velLeft, rotLeft)
 
         var l1 = new THREE.Vector3();
         var l2 = new THREE.Vector3();
         last_left_1 = document.querySelector('#glowstick-left-1').object3D.getWorldPosition(l1);
         last_left_2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(l2);
 
+
         var eLeft = document.querySelector('#glowstick-left'); 
         eLeft.setAttribute('position', posLeft);
         eLeft.object3D.setRotationFromQuaternion(rotLeft)
         
-        var n2 = new THREE.Vector3();
-        var posLeft2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(n2);
-
-        createTrailGlowstick(posLeft, posLeft2, '#00FF00', last_left_1, last_left_2, "left")
+        createTrailGlowstick(posLeft, '#00FF00', rotLeft)
 
       }
 
       if (gBButtonDown){
+        //createTrail(posRight, '#00FF00', velRight, rotRight)
 
-        var r1 = new THREE.Vector3();
-        var r2 = new THREE.Vector3();
-        last_right_1 = document.querySelector('#glowstick-right-1').object3D.getWorldPosition(r1);
-        last_right_2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(r2);
-
-        var eRight = document.querySelector('#glowstick-right'); 
-        eRight.setAttribute('position', posRight);
-        eRight.object3D.setRotationFromQuaternion(rotRight)
+        //console.log("rot: " + JSON.stringify(rotRight))
+        // var el = document.querySelector('#point-1-right'); 
+        // el.setAttribute('position', posRight);
         
-        var n22 = new THREE.Vector3();
-        var posRight2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(n22);
+        // var posTest = {};
+        // posTest.x = posRight.x - 0.5;
+        // posTest.y = posRight.y;
+        // posTest.z = posRight.z;
 
-        createTrailGlowstick(posRight, posRight2, '#FFFF00', last_right_1, last_right_2, "right")
+
+        // var el2 = document.querySelector('#point-2-right'); 
+        // el2.setAttribute('position', posTest);
+        // console.log("posTest: " + JSON.stringify(posTest));
+
+        last_right_1 = document.querySelector('#glowstick-right-1').getAttribute('position');
+        last_right_2 = document.querySelector('#glowstick-right-2').getAttribute('position');
+
+
+        var el = document.querySelector('#glowstick-right'); 
+        el.setAttribute('position', posRight);
+        el.object3D.setRotationFromQuaternion(rotRight)
+        
+        //createTrailGlowstick(posRight, '#00FF00', velRight, rotRight)
+
       }
 
-      // velLeft = calcVelocity(aPosLeft, posLeft);
-      // velRight = calcVelocity(aPosRight, posRight);
+      velLeft = calcVelocity(aPosLeft, posLeft);
+      velRight = calcVelocity(aPosRight, posRight);
 
-      // var cursor = document.querySelector('#a-cursor');
-      // if (cursor.components.raycaster.intersections.length >0 ){
-      //   var posCursor = cursor.components.raycaster.intersections[0].point;
+      var cursor = document.querySelector('#a-cursor');
+      if (cursor.components.raycaster.intersections.length >0 ){
+        var posCursor = cursor.components.raycaster.intersections[0].point;
 
-      //   velCursor = calcVelocity(aPosCursor, posCursor);
-      // }
+        velCursor = calcVelocity(aPosCursor, posCursor);
+      }
           
  
 
@@ -358,19 +430,15 @@ AFRAME.registerComponent('button-listener-right', {
      <a-entity id="point-2-right"  position="0 0 0" material="color: orange;" geometry="primitive: box; height: 0.10; width: 0.10; depth: 0.10"></a-entity>
       -->
 
-    <a-entity id="glowstick-left" position="0 0 0">
-     
-      <a-entity id="glowstick-left-1" position="0 0 0" material="visible:false; color: purple;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
-      <a-entity id="glowstick-left-2" position="0 0.15 -0.1" rotation="0 0 0" material="visible:false; color: orange;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
-    
-    </a-entity>
-
     <a-entity id="glowstick-right" position="0 0 0">
-     <a-entity id="glowstick-right-1" position="0 0 0" material="visible:false; color: purple;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
-     <a-entity id="glowstick-right-2" position="0 0.15 -0.1" rotation="0 0 0" material="visible:false; color: orange;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
+     <a-entity id="glowstick-right-1" position="0 0 0" material="color: purple;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
+     <a-entity id="glowstick-right-2" position="0 0.15 -0.1" rotation="0 0 0" material="color: orange;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
     </a-entity>
 
-
+    <a-entity id="glowstick-left" position="0 0 0">
+      <a-entity id="glowstick-left-1" position="0 0 0" material="color: purple;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
+      <a-entity id="glowstick-left-2" position="0 0.15 -0.1" rotation="0 0 0" material="color: orange;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
+     </a-entity>
 
       <!-- A-Frame cubes -->
       <a-entity position="0 0 -0.5">
@@ -401,7 +469,7 @@ AFRAME.registerComponent('button-listener-right', {
         <a-entity id="a-cursor" cursor="fuse: true; fuseTimeout: 500"
           position="0 0 -1"
           geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
-          material="color: black; shader: flat; visible:false;">
+          material="color: black; shader: flat">
         </a-entity>
       </a-entity>
 
