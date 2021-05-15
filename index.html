@@ -18,7 +18,7 @@ console.log("STARTUP!")
 
 
 
-    function createTrail(newPos, color, newVel){
+    function createTrail(newPos, color, newVel, newRot){
 
       var sceneEl = document.querySelector('a-scene');
 
@@ -32,12 +32,18 @@ console.log("STARTUP!")
 
       //material="color: #EF2DFF;"
       // position.y = 0.5;// position.x = 0// position.z = 0
-      newEl.setAttribute('position', newPos);
-
+      //newPos.y = newPos.y + 1;
       
-
+      newEl.setAttribute('position', newPos);
+      
+      if (newRot){
+        //newEl.setAttribute('rotation', newRot);
+        newEl.object3D.setRotationFromQuaternion(newRot)
+        //newEl.object3D.rotation.x += 0.5; //THIS DOES NOT WORK CORRECTLY.
+      }
+  
       //newEl.setAttribute('scale',0.1)
-      newEl.object3D.scale.set(0.1,0.1,0.1);
+      newEl.object3D.scale.set(0.02,0.2,0.02);
       //newEl.setAttribute('geometry',="primitive: box; height: 0.30; width: 0.30; depth: 0.30"
 
       newEl.setAttribute('animation__shrink', {
@@ -217,7 +223,7 @@ AFRAME.registerComponent('button-listener-right', {
 
 
     // GAME LOOP
-    const TICKS_PER_FRAME = 50;
+    const TICKS_PER_FRAME = 20;
 
     var myVar = setInterval(function(){
       
@@ -229,7 +235,12 @@ AFRAME.registerComponent('button-listener-right', {
         }
         var intersection = cursor.components.raycaster.intersections[0];
         var intersectionPosition = intersection.point;
-        createTrail(intersectionPosition, 'red', velCursor)
+
+        const quaternion = new THREE.Quaternion();
+        quaternion._x = 0.5;
+        quaternion._z = 0.2;
+
+        createTrail(intersectionPosition, '#FFFF00', velCursor, quaternion)
       }
 
 
@@ -237,16 +248,30 @@ AFRAME.registerComponent('button-listener-right', {
       var handLeft = document.querySelector('#hand-left'); 
       var cameraPostionLeft = new THREE.Vector3();
       var posLeft = handLeft.object3D.getWorldPosition(cameraPostionLeft);
+      const quaternionLeft = new THREE.Quaternion();
+      var rotLeft = handLeft.object3D.getWorldQuaternion(quaternionLeft);
+
+      rotLeft._x += 0.5;
+
       var handRight = document.querySelector('#hand-right'); 
       var cameraPostionRight = new THREE.Vector3();
       var posRight = handRight.object3D.getWorldPosition(cameraPostionRight);
 
+      const quaternionRight = new THREE.Quaternion();
+      var rotRight = handRight.object3D.getWorldQuaternion(quaternionRight);
+      rotRight._y += 0.5;
+
+
+   
+      //debugger;
+     
+
       if (gYButtonDown){ 
-        createTrail(posLeft, 'red', velLeft)
+        createTrail(posLeft, '#FFFF00', velLeft, rotLeft)
       }
 
       if (gBButtonDown){
-        createTrail(posRight, 'blue', velRight)
+        createTrail(posRight, '#00FF00', velRight, rotRight)
       }
 
       velLeft = calcVelocity(aPosLeft, posLeft);
