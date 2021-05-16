@@ -12,7 +12,9 @@
     <script src="components/ground.js"></script>
     <script src="shaders/skyGradient.js"></script>
     <script src="https://unpkg.com/aframe-event-set-component@4.0.1/dist/aframe-event-set-component.min.js"></script>
-  
+    
+    <script src="https://cdn.jsdelivr.net/npm/aframe-look-at-component@1.0.0/index.min.js"></script>
+
   <script>
 console.log("STARTUP!")
 
@@ -42,14 +44,14 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
   var sceneEl = document.querySelector('a-scene');
 
-  var groupEl = document.createElement('a-entity');
-  sceneEl.appendChild(groupEl);
+  // var groupEl = document.createElement('a-entity');
+  // sceneEl.appendChild(groupEl);
 
   if (true || bCreateTriangle){
   var newEl1 = document.createElement('a-circle');
   //var newEl2 = document.createElement('a-triangle');
 
-  groupEl.appendChild(newEl1);
+  sceneEl.appendChild(newEl1);
   newEl1.setAttribute('color', color);
   newEl1.setAttribute('material','side: double; transparent: false;')
   newEl1.setAttribute('geometry', {
@@ -66,9 +68,19 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   var quaternion = new THREE.Quaternion();
   //quaternion.setFromAxisAngle( new THREE.Vector3( 0, 1, 0 ), Math.PI / 2 );
 
-  var posChange = new Vector3(newPos.x - lastPos1.x, newPos.y - lastPos1.y, newPos.z - lastPos1.z)
-  quaternion.setFromUnitVectors(new Vector3(0,1,0), posChange.clone().normalize())
-  newEl1.object3D.setRotationFromQuaternion(quaternion)
+  var posChange = new THREE.Vector3(newPos.x - lastPos1.x, newPos.y - lastPos1.y, newPos.z - lastPos1.z)
+  //console.log("posChange:" + JSON.stringify(posChange))
+  quaternion = quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), posChange.clone().normalize())
+  //newEl1.object3D.setRotationFromQuaternion(quaternion)
+
+
+  //newEl1.object3D.lookAt(lastPos1.x, lastPos1.y, lastPos1.z)
+  //newEl1.object3D.lookAt(0, 0, 0)
+  //newEl1.setAttribute("look-at", "0 0 0");
+  newEl1.setAttribute("look-at",  lastPos1);
+
+  // console.log("newPos:" + JSON.stringify(newPos))
+  // console.log("lastPos1:" + JSON.stringify(lastPos1))
 
   // groupEl.appendChild(newEl2);
   // newEl2.setAttribute('color', color);
@@ -83,12 +95,12 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
  
 }//if
 
-  // newEl1.setAttribute('animation__opacity', {
-  //   property: 'material.opacity',
-  //   dur: FADEOUT_MS,
-  //   easing: 'easeOutQuad',
-  //   to: '0'
-  // })
+  newEl1.setAttribute('animation__radius', {
+    property: 'geometry.radius',
+    dur: FADEOUT_MS,
+    easing: 'easeOutQuad',
+    to: '0'
+  })
 
   //Destroy old one and register new one
 
@@ -98,7 +110,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
       var el = aParticlesLeft[iParticleLeft];
       el.parentNode.removeChild(el);
     }
-    aParticlesLeft[iParticleLeft] = groupEl;
+    aParticlesLeft[iParticleLeft] = newEl1;
     iParticleLeft ++;
     if (iParticleLeft>MAX_PARTICLES){
       iParticleLeft = 0;
@@ -110,7 +122,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
       var el = aParticlesRight[iParticleRight];
       el.parentNode.removeChild(el);
     }
-    aParticlesRight[iParticleRight] = groupEl;
+    aParticlesRight[iParticleRight] = newEl1;
     iParticleRight ++;
     if (iParticleRight>MAX_PARTICLES){
       iParticleRight = 0;
@@ -130,11 +142,11 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
     var iParticleRight = 0;
 
     
-
-    var last_left_1 = {}
-    var last_left_2 = {}
-    var last_right_1 = {}
-    var last_right_2 = {}
+    //var l1 = new THREE.Vector3()
+    var last_left_1 = new THREE.Vector3()
+    var last_left_2 = new THREE.Vector3()
+    var last_right_1 = new THREE.Vector3()
+    var last_right_2 = new THREE.Vector3()
 
     function calcVelocity(aPos, pos){
 
@@ -398,17 +410,18 @@ AFRAME.registerComponent('button-listener-right', {
       //LEFT
       if (gTriggerLeftDown){ 
 
-        var l1 = new THREE.Vector3();
-        var l2 = new THREE.Vector3();
-        last_left_1 = document.querySelector('#glowstick-left-1').object3D.getWorldPosition(l1);
-        last_left_2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(l2);
+        var distance = last_left_1.distanceTo(posLeft)
+        if (distance > 0.1){
+        document.querySelector('#glowstick-left-1').object3D.getWorldPosition(last_left_1);
+        document.querySelector('#glowstick-left-2').object3D.getWorldPosition(last_left_2);
+        }
 
         var eLeft = document.querySelector('#glowstick-left'); 
         eLeft.setAttribute('position', posLeft);
         eLeft.object3D.setRotationFromQuaternion(rotLeft)
         
-        var n2 = new THREE.Vector3();
-        var posLeft2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(n2);
+        var posLeft2 = new THREE.Vector3()
+        document.querySelector('#glowstick-left-2').object3D.getWorldPosition(posLeft2);
 
         bCreateTriangle = !gYButtonDown;
         //createTrailGlowstick(posLeft, posLeft2, '#00FF00', last_left_1, last_left_2, "left", velLeft)
@@ -418,17 +431,23 @@ AFRAME.registerComponent('button-listener-right', {
 
       if (gTriggerRightDown){
 
-        var r1 = new THREE.Vector3();
-        var r2 = new THREE.Vector3();
-        last_right_1 = document.querySelector('#glowstick-right-1').object3D.getWorldPosition(r1);
-        last_right_2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(r2);
+        //first see if last is different enough from pos
+        // var check = new THREE.Vector3();
+        // document.querySelector('#glowstick-right-1').object3D.getWorldPosition(check);
+        var distance = last_right_1.distanceTo(posRight)
+        //console.log("distance:" + d)
+        if (distance > 0.1){
+          document.querySelector('#glowstick-right-1').object3D.getWorldPosition(last_right_1);
+          document.querySelector('#glowstick-right-2').object3D.getWorldPosition(last_right_2);
+        }
+        
 
         var eRight = document.querySelector('#glowstick-right'); 
         eRight.setAttribute('position', posRight);
         eRight.object3D.setRotationFromQuaternion(rotRight)
         
-        var n22 = new THREE.Vector3();
-        var posRight2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(n22);
+        var posRight2 = new THREE.Vector3();
+        document.querySelector('#glowstick-right-2').object3D.getWorldPosition(posRight2);
 
         bCreateTriangle = !gBButtonDown;
         // createTrailGlowstick(posRight, posRight2, '#FFFF00', last_right_1, last_right_2, "right", velRight)
