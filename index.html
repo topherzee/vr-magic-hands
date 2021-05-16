@@ -20,13 +20,14 @@ console.log("STARTUP!")
 
 const VELOCITY_ON = false;
 
-const FADEOUT_MS = 2000;
+const ANIM_DELAY_MS = 1000;
+const FADEOUT_MS = 1000;
 
-const MAX_PARTICLES = 60;
-const VEL_FACTOR = 10;
+const MAX_PARTICLES = 80;
+const VEL_FACTOR = 0.5;
 
 const COLOR_LEFT = "#0000cc"
-const COLOR_RIGHT = "#000099"
+const COLOR_RIGHT = "#006699"
 
 const COLORS = ["grey","white","black","yellow","green","blue","red"];//,"pink"
 const SIZES = [0.005, 0.01, 0.1, 0.2, 0.4]
@@ -42,8 +43,31 @@ var gTriggerRightDown = false;
 var gGripLeftDown = false;
 var gGripRightDown = false;
 
+var gThrowingLeft = false;
+var gThrowingRight = false;
 
-function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel, bCreateTriangle){
+var gThrowingLeftVel = new THREE.Vector3();
+var gThrowingRightVel = new THREE.Vector3();
+
+var gThrowingLeftPos = new THREE.Vector3();
+var gThrowingRightPos = new THREE.Vector3();
+
+
+function throwElement(hand){
+  console.log("throwElement: " + hand)
+  if (hand=="left"){
+    gThrowingLeftVel = velLeft;
+    gThrowingLeftPos = document.querySelector('#hand-left').getAttribute('position');
+  }else{
+    gThrowingRightVel = velRight
+    gThrowingRightPos = document.querySelector('#hand-right').getAttribute('position');
+
+  }
+
+
+}
+
+function createTrailGlowstick(newPos, color, lastPos, hand, newVel, bCreateTriangle){
 
   var sceneEl = document.querySelector('a-scene');
 
@@ -53,9 +77,13 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   if (true || bCreateTriangle){
 
   var newEl1 = document.createElement('a-cone');
-  //var newEl2 = document.createElement('a-triangle');
 
-  var distance = lastPos1.distanceTo(newPos)
+  var distance = lastPos.distanceTo(newPos)
+  var height = distance * 2;
+  //ghetto way to trim the long connectors when mouse position moves.
+  if (height > 0.3){
+    height = 0;
+  }
 
   groupEl.appendChild(newEl1);
   newEl1.setAttribute('color', color);
@@ -64,37 +92,27 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
     primitive: 'cone',
     radiusTop: 0.1,
     radiusBottom: 0.1,
-    height: -(distance * 2),
+    height: height,
     segmentsRadial: 9,
     segmentsHeight: 3,
+    openEnded: false,
   });
   groupEl.setAttribute('position', newPos);
   newEl1.setAttribute('rotation', '90 0 0');
 
    
-  groupEl.setAttribute("look-at",  lastPos1);
+  groupEl.setAttribute("look-at",  lastPos);
 
   // console.log("newPos:" + JSON.stringify(newPos))
-  // console.log("lastPos1:" + JSON.stringify(lastPos1))
+  // console.log("lastPos:" + JSON.stringify(lastPos))
 
-  // groupEl.appendChild(newEl2);
-  // newEl2.setAttribute('color', color);
-  // newEl2.setAttribute('material','side: double; transparent: true;')
-  // newEl2.setAttribute('geometry', {
-  //   primitive: 'triangle',
-  //   vertexA: newPos,
-  //   vertexB: newPos2,
-  //   vertexC: lastPos2
-  // });
-
- 
 }//if
 
 
   newEl1.setAttribute('animation__radius_shrink', {
     property: 'geometry.radiusTop',
     dur: FADEOUT_MS,
-    delay: 500,
+    delay: ANIM_DELAY_MS,
     easing: 'easeOutQuad',
     to: 0
   })
@@ -102,7 +120,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   newEl1.setAttribute('animation__radius2_shrink', {
     property: 'geometry.radiusBottom',
     dur: FADEOUT_MS,
-    delay: 500,
+    delay: ANIM_DELAY_MS,
     easing: 'easeOutQuad',
     to: 0
   })
@@ -152,10 +170,8 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
     
     //var l1 = new THREE.Vector3()
-    var last_left_1 = new THREE.Vector3()
-    var last_left_2 = new THREE.Vector3()
-    var last_right_1 = new THREE.Vector3()
-    var last_right_2 = new THREE.Vector3()
+    var lastPosLeft = new THREE.Vector3()
+    var lastPosRight = new THREE.Vector3()
 
     function calcVelocity(aPos, pos){
 
@@ -165,16 +181,24 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
       }
 
       //Track velocities
-      var vel = {"x":0,"y":0,"z":0}
+      var vel = new THREE.Vector3();
+      //var vel = {"x":0,"y":0,"z":0}
 
-      //console.log("aPos.length:" + aPos.length);
-      //if (aPos.length >= MAX_POS){
-        var x = (pos.x - aPos[0].x) * VEL_FACTOR;
-        var y = (pos.y - aPos[0].y) * VEL_FACTOR;
-        var z = (pos.z - aPos[0].z) * VEL_FACTOR;
-        vel = {"x":x, "y":y, "z":z}
-        //console.log("vvv x:" + x);
-      //}
+      //console.log("pos: " + JSON.stringify(pos));
+      //console.log("aPos[0]: " + JSON.stringify(aPos[0]));
+
+ 
+        // var x = (pos.x - aPos[0].x) * VEL_FACTOR;
+        // var y = (pos.y - aPos[0].y) * VEL_FACTOR;
+        // var z = (pos.z - aPos[0].z) * VEL_FACTOR;
+        //vel = {"x":x, "y":y, "z":z}
+        //var vel = new THREE.Vector3(x,y,z);
+        var vel = new THREE.Vector3();
+
+        vel.subVectors(pos, aPos[0]);
+        vel.multiplyScalar(VEL_FACTOR);
+        //console.log("vel: " + JSON.stringify(vel))
+      
       
       return vel;
     }
@@ -185,8 +209,8 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
     var aPosCursor = []
     
     var velCursor = {"x":0,"y":0,"z":0};
-    var velLeft = {"x":0,"y":0,"z":0};
-    var velRight = {"x":0,"y":0,"z":0};
+    var velLeft = new THREE.Vector3();
+    var velRight = new THREE.Vector3();
 
     function incrementColor(hand,color){
       return false;
@@ -314,10 +338,13 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
         el.addEventListener('gripdown', function (evt) {
           gGripLeftDown = true;
+          gThrowingLeft = true;
+          throwElement("left");
           incrementSize("left");
         });        
         el.addEventListener('gripup', function (evt) {
           gGripLeftDown = false;
+          gThrowingLeft = false;
         });
 
       }
@@ -362,10 +389,13 @@ AFRAME.registerComponent('button-listener-right', {
 
         el.addEventListener('gripdown', function (evt) {
           gGripRightDown = true;
+          gThrowingRight = true;
+          throwElement("right");
           incrementSize("right");
         });        
         el.addEventListener('gripup', function (evt) {
           gGripRightDown = false;
+          gThrowingRight = false;
         });
     }
 });
@@ -382,100 +412,78 @@ AFRAME.registerComponent('button-listener-right', {
     // GAME LOOP
     const TICKS_PER_FRAME = 20;
 
+
+
     var myVar = setInterval(function(){
       
       //Cursor
-      if (gIsMouseDown){
-        var cursor = document.querySelector('#a-cursor'); 
-        if (cursor.components.raycaster.intersections.length == 0){
-          return; 
-        }
-        var intersection = cursor.components.raycaster.intersections[0];
-        var intersectionPosition = intersection.point;
-
-        const quaternion = new THREE.Quaternion();
-        // quaternion._x = 0.5;
-        // quaternion._z = 0.2;
-
-        //createTrail(intersectionPosition, '#FFFF00', velCursor, quaternion)
-      }
+      // if (gIsMouseDown){
+      //   var cursor = document.querySelector('#a-cursor'); 
+      //   if (cursor.components.raycaster.intersections.length == 0){
+      //     return; 
+      //   }
+      //   var intersection = cursor.components.raycaster.intersections[0];
+      //   var intersectionPosition = intersection.point;
+      // }
 
 
     
       //Controllers
       var handLeft = document.querySelector('#hand-left'); 
-      var posLeft = handLeft.getAttribute('position');
-      //const vecLeft = new THREE.Vector3();
-      const quaternionLeft = new THREE.Quaternion();
-      var rotLeft = handLeft.object3D.getWorldQuaternion(quaternionLeft);
+      var posLeft = new THREE.Vector3();
+      handLeft.object3D.getWorldPosition(posLeft)
+      velLeft = calcVelocity(aPosLeft, posLeft);
+      if (gThrowingLeft){       
+        gThrowingLeftPos = new THREE.Vector3().addVectors(gThrowingLeftVel, gThrowingLeftPos)
+        posLeft = gThrowingLeftPos.clone();
+        //console.log("throwingLeft pos:" +  posLeft.length());
+      }
 
       var handRight = document.querySelector('#hand-right'); 
-      var posRight = handRight.getAttribute('position');
-      const quaternionRight = new THREE.Quaternion();
-      var rotRight = handRight.object3D.getWorldQuaternion(quaternionRight);
-
-      velLeft = calcVelocity(aPosLeft, posLeft);
+      var posRight = new THREE.Vector3();
+      handRight.object3D.getWorldPosition(posRight)
       velRight = calcVelocity(aPosRight, posRight);
+      if (gThrowingRight){       
+        gThrowingRightPos = new THREE.Vector3().addVectors(gThrowingRightVel, gThrowingRightPos)
+        posRight = gThrowingRightPos.clone();
+        //console.log("throwingLeft pos:" +  posLeft.length());
+      }
 
-
-
-      bCreateTriangle = false;
 
       //LEFT
       if (gTriggerLeftDown){ 
-
+ 
         var ballLeft = document.querySelector('#sphere-left');
-      ballLeft.setAttribute("position",posLeft)
+        ballLeft.setAttribute("position",posLeft)
 
-
-        var distance = last_left_1.distanceTo(posLeft)
+        var distance = lastPosLeft.distanceTo(posLeft)
         if (distance > 0.01){
-        document.querySelector('#glowstick-left-1').object3D.getWorldPosition(last_left_1);
-        document.querySelector('#glowstick-left-2').object3D.getWorldPosition(last_left_2);
+          document.querySelector('#glowstick-left-1').object3D.getWorldPosition(lastPosLeft);
         }
-
         var eLeft = document.querySelector('#glowstick-left'); 
         eLeft.setAttribute('position', posLeft);
-        eLeft.object3D.setRotationFromQuaternion(rotLeft)
         
-        var posLeft2 = new THREE.Vector3()
-        document.querySelector('#glowstick-left-2').object3D.getWorldPosition(posLeft2);
-
         bCreateTriangle = !gYButtonDown;
-        //createTrailGlowstick(posLeft, posLeft2, '#00FF00', last_left_1, last_left_2, "left", velLeft)
-        //createTrailGlowstick(posLeft, posLeft2, COLORS[gColorLeftIndex], last_left_1, last_left_2, "left", velLeft,bCreateTriangle)
-        createTrailGlowstick(posLeft, posLeft2, COLOR_LEFT, last_left_1, last_left_2, "left", velLeft,bCreateTriangle)
+        createTrailGlowstick(posLeft, COLOR_LEFT, lastPosLeft, "left", velLeft,bCreateTriangle)
 
       }
 
       if (gTriggerRightDown){
 
-
-      var ballRight = document.querySelector('#sphere-right');
-      ballRight.setAttribute("position",posRight)
+        var ballRight = document.querySelector('#sphere-right');
+        ballRight.setAttribute("position",posRight)
 
         //first see if last is different enough from pos
-        // var check = new THREE.Vector3();
-        // document.querySelector('#glowstick-right-1').object3D.getWorldPosition(check);
-        var distance = last_right_1.distanceTo(posRight)
+        var distance = lastPosRight.distanceTo(posRight)
         //console.log("distance:" + d)
         if (distance > 0.01){
-          document.querySelector('#glowstick-right-1').object3D.getWorldPosition(last_right_1);
-          document.querySelector('#glowstick-right-2').object3D.getWorldPosition(last_right_2);
+          document.querySelector('#glowstick-right-1').object3D.getWorldPosition(lastPosRight);
         }
-        
-
         var eRight = document.querySelector('#glowstick-right'); 
         eRight.setAttribute('position', posRight);
-        eRight.object3D.setRotationFromQuaternion(rotRight)
         
-        var posRight2 = new THREE.Vector3();
-        document.querySelector('#glowstick-right-2').object3D.getWorldPosition(posRight2);
-
         bCreateTriangle = !gBButtonDown;
-        // createTrailGlowstick(posRight, posRight2, '#FFFF00', last_right_1, last_right_2, "right", velRight)
-        //createTrailGlowstick(posRight, posRight2, COLORS[gColorRightIndex], last_right_1, last_right_2, "right", velRight,bCreateTriangle)
-        createTrailGlowstick(posRight, posRight2, COLOR_RIGHT, last_right_1, last_right_2, "right", velRight,bCreateTriangle)
+        createTrailGlowstick(posRight, COLOR_RIGHT, lastPosRight, "right", velRight,bCreateTriangle)
       }
 
 
@@ -487,7 +495,6 @@ AFRAME.registerComponent('button-listener-right', {
       // }
           
  
-
     }, TICKS_PER_FRAME);
 
     
@@ -537,7 +544,7 @@ AFRAME.registerComponent('button-listener-right', {
     </a-entity>
 
     <a-sphere id="sphere-left" color="#0000cc" materialX="shader:flat;" radius="0.1" geometry="segmentsHeight:9; segmentsWidth:9;" position="-0.2 0.15 -0.1" ></a-sphere>
-    <a-sphere id="sphere-right" color="#000099"  materialX="shader:flat;" radius="0.1" geometry="segmentsHeight:9; segmentsWidth:9;"  position="0.2 0.15 -0.1" ></a-sphere>
+    <a-sphere id="sphere-right" color="#006699"  materialX="shader:flat;" radius="0.1" geometry="segmentsHeight:9; segmentsWidth:9;"  position="0.2 0.15 -0.1" ></a-sphere>
 
       <!-- A-Frame cubes -->
       <a-entity position="0 0 -0.5">
