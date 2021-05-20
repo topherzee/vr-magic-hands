@@ -243,21 +243,69 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
     }
 
+    var gBeatState = "WAIT_START"// WAIT_START, "WAIT_END", "BEATING"
+    var gBeatStartMS = 0;
+    var gBeatPeriodMS = 0;
+    var gLastBeat = 0;
+
+    function setBeat(){
+      if (gBeatState=="WAIT_START"){
+        gBeatStartMS = Date.now();
+        gBeatState = "WAIT_END";
+      }else if (gBeatState=="WAIT_END"){
+        gBeatPeriodMS = Date.now() - gBeatStartMS;
+        gBeatState = "BEATING";
+      }else if (gBeatState=="BEATING"){
+        gBeatStartMS = Date.now();
+        gBeatState = "WAIT_END";
+        gBeatPeriodMS = 0;
+      }
+      console.log("BeatState:" + gBeatState + " gBeatMS: " + gBeatPeriodMS)
+    }
+
+    // Returns a number from 1 to 4, which beat we are on.
+    const BEATS_PER_MEASURE = 8
+    function getBeat(callbackOnBeatChange){
+      if (gBeatPeriodMS == 0){
+        return 0;
+      }
+      var remainder = (Date.now() - gBeatStartMS) % (gBeatPeriodMS * BEATS_PER_MEASURE);
+      var beat = Math.floor(remainder / gBeatPeriodMS) + 1;
+      //console.log ("period:" + gBeatPeriodMS +" remainer: " + remainder + " beat: " + beat)
+      if (beat != gLastBeat){
+        callbackOnBeatChange(beat);
+        gLastBeat = beat;
+      }
+      return beat;
+    }
+
+//     document.body.onkeyup = function(e){
+//       if(e.keyCode == 32){
+//           //your code
+//           setBeat();
+//       }
+//   }
+//   window.addEventListener("keydown", function(e){
+//     if(e.keyCode === 32) { // e.g. v key
+//       setBeat();
+//     }
+// });
+
       // Component to change to a sequential color on click.
     AFRAME.registerComponent('cursor-listener', {
       tick: function (){
         //var el = this.el;
-        
-
         //console.log("x:" + velCursor.x);
         //console.log("c:" + aPosCursor.length);
-
       },
       init: function () {
         // this.el.addEventListener('click', function (evt) {
         //   //this.setAttribute('material', 'color', COLORS[lastIndex]);
         this.el.addEventListener('mousedown', function (evt) {
           gIsMouseDown = true;
+          //console.log("mousedown:" + JSON.stringify(this.el,null,2));
+          setBeat();
+
         });
         this.el.addEventListener('mouseup', function (evt) {
           gIsMouseDown = false;
@@ -296,6 +344,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
         });
         el.addEventListener('ybuttondown', function (evt) {
           gYButtonDown = true;
+          setBeat();
           // incrementColor("left", gColorLeftIndex);
         });
         el.addEventListener('ybuttonup', function (evt) {
@@ -344,6 +393,7 @@ AFRAME.registerComponent('button-listener-right', {
       });
       el.addEventListener('bbuttondown', function (evt) {
         gBButtonDown = true;
+        setBeat();
         // incrementColor("right", gColorRightIndex);
       });
       el.addEventListener('bbuttonup', function (evt) {
@@ -380,7 +430,14 @@ AFRAME.registerComponent('button-listener-right', {
     const TICKS_PER_FRAME = 20;
 
     var myVar = setInterval(function(){
-      
+      if (gBeatState=="BEATING"){
+        getBeat(function(beat){
+          incrementColor("right", gColorRightIndex);
+          incrementColor("left", gColorLeftIndex);
+        });
+      }
+
+      //console.log("beat:" + getBeat())
       //Cursor
       if (gIsMouseDown){
         var cursor = document.querySelector('#a-cursor'); 
@@ -484,7 +541,7 @@ AFRAME.registerComponent('button-listener-right', {
       
       <a-assets>
         <a-mixin id="cube"
-                cursor-listener
+              
                  geometry="primitive: box; height: 0.30; width: 0.30; depth: 0.30"
                  material="color: #EF2DFF;"></a-mixin>
         
@@ -519,7 +576,7 @@ AFRAME.registerComponent('button-listener-right', {
       <!-- A-Frame cubes -->
       <a-entity position="0 0 -0.5">
 
-        <a-entity id="marker" cursor-listener class="cube" mixin="cube" position="0 1.95 0" material="color: #999999;visible:false;"></a-entity>
+        <a-entity id="marker"  class="cube" mixin="cube" position="0 1.95 0" material="color: #999999;visible:false;"></a-entity>
         
         
 
@@ -529,7 +586,7 @@ AFRAME.registerComponent('button-listener-right', {
         <a-entity id="sky" cursor-listener
                   geometry="primitive: sphere; radius: 65;"
                   material="shader: skyGradient; colorTop: #353449; colorBottom: #BC483E; side: back"></a-entity>
-         <a-entity ground cursor-listener></a-entity>
+         <a-entity ground ></a-entity>
          
          <a-entity light="type: point; color: #f4f4f4; intensity: 0.1; distance: 0" position="-2.5 1.2 2.2"></a-entity>
          <a-entity light="type: point; color: #f4f4f4; intensity: 0.1; distance: 0" position="-20 -7 -40"></a-entity>
