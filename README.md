@@ -8,7 +8,10 @@ Only tested on Oculus Quest 1.
 
 Surf to this URL in your Browser in your VR device.
 
-Use the Y and B buttons on the controls.
+# BENDING
+Use the trigger to bend teh balls.
+Use the grip button to Throw them.
+
 
 ## Start
 

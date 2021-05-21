@@ -26,6 +26,8 @@ const FADEOUT_MS = 1000;
 const MAX_PARTICLES = 80;
 const VEL_FACTOR = 0.5;
 
+const MAX_THROW_VELOCITY = 0.05;
+
 const COLOR_LEFT = "#0000cc"
 const COLOR_RIGHT = "#006699"
 
@@ -52,16 +54,20 @@ var gThrowingRightVel = new THREE.Vector3();
 var gThrowingLeftPos = new THREE.Vector3();
 var gThrowingRightPos = new THREE.Vector3();
 
+var gThrownLeftPos = new THREE.Vector3();
+var gThrownRightPos = new THREE.Vector3();
+
 
 function throwElement(hand){
   console.log("throwElement: " + hand)
   if (hand=="left"){
     gThrowingLeftVel = velLeft;
     gThrowingLeftPos = document.querySelector('#hand-left').getAttribute('position');
+    gThrownLeftPos.copy(gThrowingLeftPos)
   }else{
     gThrowingRightVel = velRight
     gThrowingRightPos = document.querySelector('#hand-right').getAttribute('position');
-
+    gThrownRightPos.copy(gThrowingRightPos)
   }
 
 
@@ -433,7 +439,12 @@ AFRAME.registerComponent('button-listener-right', {
       var posLeft = new THREE.Vector3();
       handLeft.object3D.getWorldPosition(posLeft)
       velLeft = calcVelocity(aPosLeft, posLeft);
-      if (gThrowingLeft){       
+      if (gThrowingLeft){     
+        //adjust valocity
+        var gThrowingLeftAccel = new THREE.Vector3().subVectors(posLeft, gThrownLeftPos)
+        gThrowingLeftVel = new THREE.Vector3().addVectors(gThrowingLeftAccel, gThrowingLeftVel).clampLength(0,MAX_THROW_VELOCITY)
+        
+        //adjust position
         gThrowingLeftPos = new THREE.Vector3().addVectors(gThrowingLeftVel, gThrowingLeftPos)
         posLeft = gThrowingLeftPos.clone();
         //console.log("throwingLeft pos:" +  posLeft.length());
@@ -443,7 +454,13 @@ AFRAME.registerComponent('button-listener-right', {
       var posRight = new THREE.Vector3();
       handRight.object3D.getWorldPosition(posRight)
       velRight = calcVelocity(aPosRight, posRight);
-      if (gThrowingRight){       
+      if (gThrowingRight){    
+        
+        //adjust valocity
+        var gThrowingRightAccel = new THREE.Vector3().subVectors(posRight, gThrownRightPos)
+        gThrowingRightVel = new THREE.Vector3().addVectors(gThrowingRightAccel, gThrowingRightVel).clampLength(0,MAX_THROW_VELOCITY)
+        
+        //adjust position
         gThrowingRightPos = new THREE.Vector3().addVectors(gThrowingRightVel, gThrowingRightPos)
         posRight = gThrowingRightPos.clone();
         //console.log("throwingLeft pos:" +  posLeft.length());
