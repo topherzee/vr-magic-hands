@@ -24,12 +24,17 @@ When starting to draw - by default - do not connect. DONE.
 Touching trigger brings up wand.
 Light comes from hand always. DONE.
 tip indicates drawing always. DONE.
-Tip color changes.???????
+Tip color changes. DONE.
 
 Way to erase scene or line.
 thumbstick to change length.
 thunbstick to change color.
 Only one Beat Button.
+16 beats.
+
+## WISH LIST
+Networking - Dance parthy
+Sharing creations - drawings with others easily
 
 # BENDING
 ## LOG

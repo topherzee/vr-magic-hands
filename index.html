@@ -31,7 +31,8 @@ const GREEN = 4
 const BLUE = 5;
 const RED = 6; 
 const COLORS = ["grey","white","black","yellow","green","blue","red"];//,"pink"
-const SIZES = [0.005, 0.01, 0.1, 0.2, 0.4]
+const SIZES = [0.001, 0.005, 0.02, 0.05, 0.1, 0.2] //these get trippled.
+
 var gColorLeftIndex = 4;
 var gColorRightIndex = 5;
 var gColorSkyIndex = 1;
@@ -202,33 +203,39 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
     var velLeft = {"x":0,"y":0,"z":0};
     var velRight = {"x":0,"y":0,"z":0};
 
-    function incrementColor(hand,color){
+    function incrementColor(hand,color,amount){
       // color++;
       // if (color >= COLORS.length){
       //   color = 0;
       // }
       if (hand=="left"){
-        gColorLeftIndex++;
+        gColorLeftIndex+= amount;
         if (gColorLeftIndex >= COLORS.length){
           gColorLeftIndex = 0;
+        }else if (gColorLeftIndex<0){
+          gColorLeftIndex = COLORS.length;
         }
       }else{
-        gColorRightIndex++;
+        gColorRightIndex+= amount;
         if (gColorRightIndex >= COLORS.length){
           gColorRightIndex = 0;
+        }else if (gColorRightIndex<0){
+          gColorRightIndex = COLORS.length;
         }
       }
 
     }
 
-    function incrementSize(hand){
+    function incrementSize(hand, amount){
 
       
       var f,p, point;
       if (hand=="left"){
-        gSizeLeftIndex++;
+        gSizeLeftIndex+= amount;
         if (gSizeLeftIndex >= SIZES.length){
           gSizeLeftIndex = 0;
+        }else if (gSizeLeftIndex<0){
+          gSizeLeftIndex = SIZES.length;
         }
 
         f = SIZES[gSizeLeftIndex];
@@ -240,9 +247,11 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
         point.setAttribute('position', p)
 
       }else{
-        gSizeRightIndex++;
+        gSizeRightIndex+= amount;
         if (gSizeRightIndex >= SIZES.length){
           gSizeRightIndex = 0;
+        }else if (gSizeRightIndex<0){
+          gSizeRightIndex = SIZES.length;
         }
 
         f = SIZES[gSizeRightIndex];
@@ -345,20 +354,22 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
       init: function () {
         var el = this.el;
+
+        
         // el.addEventListener('xbuttondown', function (evt) {
         //   var newPos = el.object3D.getWorldPosition();
         //   createTrail(newPos)
         // });
         el.addEventListener('xbuttondown', function (evt) {
           gXButtonDown = true;
-          incrementColor("left", gColorLeftIndex);
+          
         });
         el.addEventListener('xbuttonup', function (evt) {
           gXButtonDown = false;
         });
         el.addEventListener('ybuttondown', function (evt) {
           gYButtonDown = true;
-          setBeat();
+          
           // incrementColor("left", gColorLeftIndex);
         });
         el.addEventListener('ybuttonup', function (evt) {
@@ -373,42 +384,72 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
           gLeftDrawing = false;
         });
 
+
         el.addEventListener('gripdown', function (evt) {
           gGripLeftDown = true;
-          incrementSize("left");
+          setBeat();
         });        
         el.addEventListener('gripup', function (evt) {
           gGripLeftDown = false;
         });
 
+        el.addEventListener('thumbsticktouchstart', function (evt) {
+          var thumb = document.querySelector("#thumb-control-left");
+          thumb.setAttribute("visible","true")
+        });        
+        el.addEventListener('thumbsticktouchend', function (evt) {
+          var thumb = document.querySelector("#thumb-control-left");
+          thumb.setAttribute("visible","false")
+        });
+
+
+        el.addEventListener('thumbstickmoved', function (evt) {
+          
+          if (!gLeftThumbSpent){
+            if (evt.detail.y > 0.65) { //DOWN
+              incrementSize("left", -1); 
+              gLeftThumbSpent = true;
+            }
+            if (evt.detail.y < -0.65) {  //UP
+              incrementSize("left", 1); 
+              gLeftThumbSpent = true;
+            }
+            if (evt.detail.x < -0.65) { //LEFT
+                incrementColor("left", gColorLeftIndex, -1); 
+                gLeftThumbSpent = true;
+            }
+            if (evt.detail.x > 0.65) { //RIGHT
+                incrementColor("left", gColorLeftIndex, 1); 
+                gLeftThumbSpent = true;
+            }
+          }//if
+
+          if (Math.abs(evt.detail.x) < 0.4 && Math.abs(evt.detail.y) < 0.4){
+            gLeftThumbSpent = false;
+          }
+        });
+
       }
     });
 
+    var gLeftThumbSpent = false;
+    var gRightThumbSpent = false;
+
 AFRAME.registerComponent('button-listener-right', {
-
-    // tick: function (){
-    //   var el = this.el;
-    //   //var velLeft = calcVelocity(aPosLeft, posLeft)
-
-    // },
 
     init: function () {
       var el = this.el;
-      // el.addEventListener('xbuttondown', function (evt) {
-      //   var newPos = el.object3D.getWorldPosition();
-      //   createTrail(newPos)
-      // });
 
       el.addEventListener('abuttondown', function (evt) {
         gAButtonDown = true;
-        incrementColor("right", gColorRightIndex);
+        
       });
       el.addEventListener('abuttonup', function (evt) {
         gAButtonDown = false;
       });
       el.addEventListener('bbuttondown', function (evt) {
         gBButtonDown = true;
-        setBeat();
+        
         // incrementColor("right", gColorRightIndex);
       });
       el.addEventListener('bbuttonup', function (evt) {
@@ -425,10 +466,45 @@ AFRAME.registerComponent('button-listener-right', {
 
         el.addEventListener('gripdown', function (evt) {
           gGripRightDown = true;
-          incrementSize("right");
+          setBeat();
         });        
         el.addEventListener('gripup', function (evt) {
           gGripRightDown = false;
+        });
+
+        el.addEventListener('thumbsticktouchstart', function (evt) {
+          var thumb = document.querySelector("#thumb-control-right");
+          thumb.setAttribute("visible","true")
+        });        
+        el.addEventListener('thumbsticktouchend', function (evt) {
+          var thumb = document.querySelector("#thumb-control-right");
+          thumb.setAttribute("visible","false")
+        });
+
+        el.addEventListener('thumbstickmoved', function (evt) {
+          
+          if (!gRightThumbSpent){
+            if (evt.detail.y > 0.65) { //DOWN
+              incrementSize("right", -1); 
+              gRightThumbSpent = true;
+            }
+            if (evt.detail.y < -0.65) {  //UP
+              incrementSize("right", 1); 
+              gRightThumbSpent = true;
+            }
+            if (evt.detail.x < -0.65) { //LEFT
+                incrementColor("right", gColorRightIndex, -1); 
+                gRightThumbSpent = true;
+            }
+            if (evt.detail.x > 0.65) { //RIGHT
+                incrementColor("right", gColorRightIndex, 1); 
+                gRightThumbSpent = true;
+            }
+          }//if
+
+          if (Math.abs(evt.detail.x) < 0.4 && Math.abs(evt.detail.y) < 0.4){
+            gRightThumbSpent = false;
+          }
         });
     }
 });
@@ -539,17 +615,31 @@ AFRAME.registerComponent('button-listener-right', {
 
         //createTrail(intersectionPosition, '#FFFF00', velCursor, quaternion)
       }
+      var sky = document.querySelector('#sky'); 
+      sky.setAttribute('background', "color:" + COLORS[gColorSkyIndex]);
+      var ground = document.querySelector('#ground'); 
+      ground.setAttribute('color', COLORS[gColorGroundIndex]);
+       
+      var tipLeft = document.querySelector('#glowstick-left-tip'); 
+      tipLeft.setAttribute('material', 'color:' + COLORS[gColorLeftIndex])
+      var tipRight = document.querySelector('#glowstick-right-tip'); 
+      tipRight.setAttribute('material', 'color:' + COLORS[gColorRightIndex])
+
+
+
 
 
     
-      //Controllers
+      //Controllers'
+      
+      //LEFT
       var handLeft = document.querySelector('#hand-left'); 
       var posLeft = handLeft.getAttribute('position');
       var posLeft2 = new THREE.Vector3();
-      //const vecLeft = new THREE.Vector3();
       const quaternionLeft = new THREE.Quaternion();
       var rotLeft = handLeft.object3D.getWorldQuaternion(quaternionLeft);
 
+      //RIGHT
       var handRight = document.querySelector('#hand-right'); 
       var posRight = handRight.getAttribute('position');
       var posRight2 = new THREE.Vector3();
@@ -559,18 +649,7 @@ AFRAME.registerComponent('button-listener-right', {
       velLeft = calcVelocity(aPosLeft, posLeft);
       velRight = calcVelocity(aPosRight, posRight);
 
-      bCreateTriangle = false;
 
-      var sky = document.querySelector('#sky'); 
-      sky.setAttribute('background', "color:" + COLORS[gColorSkyIndex]);
-      var ground = document.querySelector('#ground'); 
-      ground.setAttribute('color', COLORS[gColorGroundIndex]);
-       
-      
-      var tipLeft = document.querySelector('#glowstick-left-tip'); 
-      tipLeft.setAttribute('material', 'color:' + COLORS[gColorLeftIndex])
-      var tipRight = document.querySelector('#glowstick-right-tip'); 
-      tipRight.setAttribute('material', 'color:' + COLORS[gColorRightIndex])
 
 
       //LEFT
@@ -644,15 +723,19 @@ AFRAME.registerComponent('button-listener-right', {
 
       <a-entity  oculus-touch-controls="hand: left; model:true" id="hand-left" button-listener-left>
         <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
-        <a-entity id="glowstick-left-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader: flat; color: green;" geometry="primitive: box; height: 0.001; width: 0.001; depth: 0.001"></a-entity>
+        <a-entity id="glowstick-left-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader: flat; color: green;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
 
+        <a-line id="glowstick-left-bar" position="0 0 0" rotation="0 0 0" material="visible:true; shader: flat; color: green;" ></a-entity>
+
+
+        <a-entity id="thumb-control-left" position="0 0.05 -0.01" rotation="40 0 0" material="visible:true; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
       </a-entity>
 
       <a-entity  oculus-touch-controls="hand: right; model:true" id="hand-right"  button-listener-right>
         <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
-        <a-entity id="glowstick-right-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader:flat; color: yellow;" geometry="primitive: box; height: 0.001; width: 0.001; depth: 0.001"></a-entity>
+        <a-entity id="glowstick-right-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader:flat; color: yellow;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
 
-
+        <a-entity id="thumb-control-right" position="0 0.05 -0.01" rotation="40 0 0" material="visible:true; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
       </a-entity>
 
       <a-entity id="glowstick-left" position="0 0 0">
