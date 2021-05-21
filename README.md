@@ -23,7 +23,9 @@ Grip Buttons: Increments Size
 When starting to draw - by default - do not connect. DONE.
 Touching trigger brings up wand.
 Light comes from hand always. DONE.
-tip indicates drawing always. Tip color changes.
+tip indicates drawing always. DONE.
+Tip color changes.???????
+
 Way to erase scene or line.
 thumbstick to change length.
 thunbstick to change color.

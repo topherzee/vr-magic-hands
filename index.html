@@ -52,7 +52,8 @@ var gGripRightDown = false;
 
 function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel){
 
-  console.log("trails: " + newPos)
+  // console.log("NEW: " + JSON.stringify(newPos) + " NEW2: " + JSON.stringify(newPos2))
+  // console.log("OLD: " + JSON.stringify(lastPos1) + "OLD2: " + JSON.stringify(lastPos2))
 
   var sceneEl = document.querySelector('a-scene');
 
@@ -235,6 +236,8 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
         
         point = document.querySelector('#glowstick-left-2'); 
         point.setAttribute('position', p)
+        point = document.querySelector('#glowstick-left-tip'); 
+        point.setAttribute('position', p)
 
       }else{
         gSizeRightIndex++;
@@ -246,6 +249,8 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
         p = {'x':0, 'y':f*3, 'z':-f*2}
         
         point = document.querySelector('#glowstick-right-2'); 
+        point.setAttribute('position', p)
+        point = document.querySelector('#glowstick-right-tip'); 
         point.setAttribute('position', p)
         
       }
@@ -560,7 +565,13 @@ AFRAME.registerComponent('button-listener-right', {
       sky.setAttribute('background', "color:" + COLORS[gColorSkyIndex]);
       var ground = document.querySelector('#ground'); 
       ground.setAttribute('color', COLORS[gColorGroundIndex]);
-        
+       
+      
+      var tipLeft = document.querySelector('#glowstick-left-tip'); 
+      tipLeft.setAttribute('material', 'color:' + COLORS[gColorLeftIndex])
+      var tipRight = document.querySelector('#glowstick-right-tip'); 
+      tipRight.setAttribute('material', 'color:' + COLORS[gColorRightIndex])
+
 
       //LEFT
       if (gTriggerLeftDown){ 
@@ -602,6 +613,12 @@ AFRAME.registerComponent('button-listener-right', {
           }
         }
         createTrailGlowstick(posRight, posRight2, COLORS[gColorRightIndex], last_right_1, last_right_2, "right", velRight)
+      
+        // // last_right_1 = document.querySelector('#glowstick-right-1').object3D.getWorldPosition(last_right_1);
+        // // last_right_2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(last_right_2);
+        // last_right_1.copy(document.querySelector('#glowstick-right-1').object3D.getWorldPosition(last_right_1));
+        // last_right_2.copy(document.querySelector('#glowstick-right-2').object3D.getWorldPosition(last_right_2));
+
       }
 
     }, TICKS_PER_FRAME);
@@ -627,23 +644,25 @@ AFRAME.registerComponent('button-listener-right', {
 
       <a-entity  oculus-touch-controls="hand: left; model:true" id="hand-left" button-listener-left>
         <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
+        <a-entity id="glowstick-left-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader: flat; color: green;" geometry="primitive: box; height: 0.001; width: 0.001; depth: 0.001"></a-entity>
+
       </a-entity>
 
       <a-entity  oculus-touch-controls="hand: right; model:true" id="hand-right"  button-listener-right>
         <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
-      
-      
+        <a-entity id="glowstick-right-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader:flat; color: yellow;" geometry="primitive: box; height: 0.001; width: 0.001; depth: 0.001"></a-entity>
+
+
       </a-entity>
 
       <a-entity id="glowstick-left" position="0 0 0">
         <a-entity id="glowstick-left-1" position="0 0 0" material="visible:false; color: purple;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
-        <a-entity id="glowstick-left-2" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; color: white;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
+        <a-entity id="glowstick-left-2" position="0 0.15 -0.1" rotation="0 0 0" material="visible:false; color: white;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
       </a-entity>
   
       <a-entity id="glowstick-right" position="0 0 0">
-       <a-entity id="glowstick-right-1" position="0 0 0" material="visible:false; color: purple;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
-       <a-entity id="glowstick-right-2" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; color: white;" geometry="primitive: box; height: 0.001; width: 0.001; depth: 0.001"></a-entity>
-  
+        <a-entity id="glowstick-right-1" position="0 0 0" material="visible:false; color: purple;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
+        <a-entity id="glowstick-right-2" position="0 0.15 -0.1" rotation="0 0 0" material="visible:false; color: white;" geometry="primitive: box; height: 0.001; width: 0.001; depth: 0.001"></a-entity>
       </a-entity>
 
 
