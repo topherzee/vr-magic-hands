@@ -8,9 +8,17 @@ Only tested on Oculus Quest 1.
 
 Surf to this URL in your Browser in your VR device.
 
-Use the Y and B buttons on the controls.
+## Controls
 
-## Start
+Trigger: Glow trails.
+
+A/X: Increment Color
+
+B/Y: Prevent trail connection. Set Beat with 2 clicks.
+
+Grip Buttons: Increments Size
+
+## Run Locally
 
 To Start
 http-server -S -C cert.pem
