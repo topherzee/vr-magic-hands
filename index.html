@@ -26,7 +26,10 @@ const FADEOUT_MS = 1000;
 const MAX_PARTICLES = 80;
 const VEL_FACTOR = 0.5;
 
-const MAX_THROW_VELOCITY = 0.05;
+//THROWINGG.
+const THROW_ACCEL_FACTOR = 0.05;
+const MAX_THROW_VELOCITY = 0.07; //how fast it can go.
+const THROW_VEL_THRESHOLD = 0.05; //throw this hard to get it to go.
 
 const COLOR_LEFT = "#0000cc"
 const COLOR_RIGHT = "#006699"
@@ -60,14 +63,24 @@ var gThrownRightPos = new THREE.Vector3();
 
 function throwElement(hand){
   console.log("throwElement: " + hand)
+
   if (hand=="left"){
-    gThrowingLeftVel = velLeft;
-    gThrowingLeftPos = document.querySelector('#hand-left').getAttribute('position');
-    gThrownLeftPos.copy(gThrowingLeftPos)
+    if (!gThrowingLeft){
+      gThrowingLeftVel = velLeft;
+      gThrowingLeftPos = document.querySelector('#hand-left').getAttribute('position');
+      gThrownLeftPos.copy(gThrowingLeftPos)
+      gThrowingLeft = true;
+    }
+    
   }else{
-    gThrowingRightVel = velRight
-    gThrowingRightPos = document.querySelector('#hand-right').getAttribute('position');
-    gThrownRightPos.copy(gThrowingRightPos)
+    if (!gThrowingRight){
+      gThrowingRightVel = velRight
+      gThrowingRightPos = document.querySelector('#hand-right').getAttribute('position');
+      gThrownRightPos.copy(gThrowingRightPos)
+      gThrowingRight = true;
+    }
+   
+
   }
 
 
@@ -181,31 +194,23 @@ function createTrailGlowstick(newPos, color, lastPos, hand, newVel, bCreateTrian
 
     function calcVelocity(aPos, pos){
 
-      aPos.push(pos);
+      if (pos.length()>0){
+        aPos.push(pos);
+      }
+      
+
       if (aPos.length > MAX_POS){
         aPos.shift();
       }
 
-      //Track velocities
       var vel = new THREE.Vector3();
-      //var vel = {"x":0,"y":0,"z":0}
-
-      //console.log("pos: " + JSON.stringify(pos));
-      //console.log("aPos[0]: " + JSON.stringify(aPos[0]));
-
- 
-        // var x = (pos.x - aPos[0].x) * VEL_FACTOR;
-        // var y = (pos.y - aPos[0].y) * VEL_FACTOR;
-        // var z = (pos.z - aPos[0].z) * VEL_FACTOR;
-        //vel = {"x":x, "y":y, "z":z}
-        //var vel = new THREE.Vector3(x,y,z);
-        var vel = new THREE.Vector3();
-
+      if (aPos.length > 1){
         vel.subVectors(pos, aPos[0]);
         vel.multiplyScalar(VEL_FACTOR);
         //console.log("vel: " + JSON.stringify(vel))
-      
-      
+      }
+ 
+
       return vel;
     }
 
@@ -439,9 +444,15 @@ AFRAME.registerComponent('button-listener-right', {
       var posLeft = new THREE.Vector3();
       handLeft.object3D.getWorldPosition(posLeft)
       velLeft = calcVelocity(aPosLeft, posLeft);
+      
+
+      if (velLeft.length() > THROW_VEL_THRESHOLD){
+        
+        throwElement("left")
+      }
       if (gThrowingLeft){     
         //adjust valocity
-        var gThrowingLeftAccel = new THREE.Vector3().subVectors(posLeft, gThrownLeftPos)
+        var gThrowingLeftAccel = new THREE.Vector3().subVectors(posLeft, gThrownLeftPos).multiplyScalar(THROW_ACCEL_FACTOR)
         gThrowingLeftVel = new THREE.Vector3().addVectors(gThrowingLeftAccel, gThrowingLeftVel).clampLength(0,MAX_THROW_VELOCITY)
         
         //adjust position
@@ -454,10 +465,13 @@ AFRAME.registerComponent('button-listener-right', {
       var posRight = new THREE.Vector3();
       handRight.object3D.getWorldPosition(posRight)
       velRight = calcVelocity(aPosRight, posRight);
+      if (velRight.length() > THROW_VEL_THRESHOLD){
+        throwElement("right")
+      }
       if (gThrowingRight){    
         
         //adjust valocity
-        var gThrowingRightAccel = new THREE.Vector3().subVectors(posRight, gThrownRightPos)
+        var gThrowingRightAccel = new THREE.Vector3().subVectors(posRight, gThrownRightPos).multiplyScalar(THROW_ACCEL_FACTOR)
         gThrowingRightVel = new THREE.Vector3().addVectors(gThrowingRightAccel, gThrowingRightVel).clampLength(0,MAX_THROW_VELOCITY)
         
         //adjust position
