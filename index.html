@@ -69,8 +69,10 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   groupEl.appendChild(newEl2);
   newEl1.setAttribute('color', color);
   newEl2.setAttribute('color', color);
-  newEl1.setAttribute('material','side: double; transparent: true;')
-  newEl2.setAttribute('material','side: double; transparent: true;')
+  // newEl1.setAttribute('material','side: double; transparent: true;')
+  // newEl2.setAttribute('material','side: double; transparent: true;')
+  newEl1.setAttribute('material','side: double; transparent: false;')
+  newEl2.setAttribute('material','side: double; transparent: false;')
 
   newEl1.setAttribute('geometry', {
     primitive: 'triangle',
@@ -286,15 +288,18 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
       console.log("BeatState:" + gBeatState + " gBeatMS: " + gBeatPeriodMS)
     }
 
-    // Returns a number from 1 to 4, which beat we are on.
-    const BEATS_PER_MEASURE = 8
+    // Returns a number from 1 to 16, which beat we are on.
+    const BEATS_PER_MEASURE = 16;
+
     function getBeat(callbackOnBeatChange){
       if (gBeatPeriodMS == 0){
         return 0;
       }
-      var remainder = (Date.now() - gBeatStartMS) % (gBeatPeriodMS * BEATS_PER_MEASURE);
-      var beat = Math.floor(remainder / gBeatPeriodMS) + 1;
-      //console.log ("period:" + gBeatPeriodMS +" remainer: " + remainder + " beat: " + beat)
+      var sixteenthMS = gBeatPeriodMS/4;
+
+      var remainder = (Date.now() - gBeatStartMS) % (sixteenthMS * BEATS_PER_MEASURE);
+      var beat = Math.floor(remainder / sixteenthMS) + 1;
+      //console.log ("period:" + sixteenthMS +" remainer: " + remainder + " beat: " + beat)
       if (beat != gLastBeat){
         callbackOnBeatChange(beat);
         gLastBeat = beat;
@@ -395,11 +400,11 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
         el.addEventListener('thumbsticktouchstart', function (evt) {
           var thumb = document.querySelector("#thumb-control-left");
-          thumb.setAttribute("visible","true")
+          //thumb.setAttribute("visible","true")
         });        
         el.addEventListener('thumbsticktouchend', function (evt) {
           var thumb = document.querySelector("#thumb-control-left");
-          thumb.setAttribute("visible","false")
+          //thumb.setAttribute("visible","false")
         });
 
 
@@ -474,11 +479,11 @@ AFRAME.registerComponent('button-listener-right', {
 
         el.addEventListener('thumbsticktouchstart', function (evt) {
           var thumb = document.querySelector("#thumb-control-right");
-          thumb.setAttribute("visible","true")
+          //thumb.setAttribute("visible","true")
         });        
         el.addEventListener('thumbsticktouchend', function (evt) {
           var thumb = document.querySelector("#thumb-control-right");
-          thumb.setAttribute("visible","false")
+          //thumb.setAttribute("visible","false")
         });
 
         el.addEventListener('thumbstickmoved', function (evt) {
@@ -554,12 +559,13 @@ AFRAME.registerComponent('button-listener-right', {
           }
 
 
-        function USAflag(beat){
+        function USAFlag(beat){
 
           gColorSkyIndex = WHITE;
           gColorGroundIndex = WHITE;
 
-          if (beat==1 || beat==3 || beat==5 || beat==7){
+          //every 4th beat.
+          if (beat % 4){
             gColorRightIndex = WHITE;
             gColorLeftIndex = RED; //blue
 
@@ -567,18 +573,18 @@ AFRAME.registerComponent('button-listener-right', {
             gSizeLeftIndex = 1;
           }else{
             gColorRightIndex = BLUE; //blue
-            gColorLeftIndex = RED;
+            gColorLeftIndex = WHITE;
 
             gSizeRightIndex = 1;
             gSizeLeftIndex = 0;
           }
         }
 
-        function Germanflag(beat){
+        function GermanFlag(beat){
           gColorSkyIndex = BLACK;
           gColorGroundIndex = BLACK;
           
-          if (beat==1 || beat==3 || beat==5 || beat==7){
+          if (Math.trunc(beat/4) % 2){
             gColorRightIndex = BLACK;
             gColorLeftIndex = RED; //blue
 
@@ -593,10 +599,31 @@ AFRAME.registerComponent('button-listener-right', {
           }
         }
 
+        function GermanFlagFast(beat){
+          gColorSkyIndex = BLACK;
+          gColorGroundIndex = BLACK;
+          
+          gSizeRightIndex = 2;
+          gSizeLeftIndex = 4;
+          if (beat % 2){
+            gColorRightIndex = BLACK;
+          }else{
+            gColorRightIndex = RED; 
+          }
+
+          if (beat % 8){
+            gColorLeftIndex = BLACK;
+          }else{
+            gColorLeftIndex = YELLOW; 
+          }
+
+        }
+
+
     var myVar = setInterval(function(){
       
       if (gBeatState=="BEATING"){
-        getBeat(Germanflag);
+        getBeat(GermanFlag);
       }
 
       //console.log("beat:" + getBeat())
@@ -638,6 +665,24 @@ AFRAME.registerComponent('button-listener-right', {
       var posLeft2 = new THREE.Vector3();
       const quaternionLeft = new THREE.Quaternion();
       var rotLeft = handLeft.object3D.getWorldQuaternion(quaternionLeft);
+
+      // var barLeft = document.querySelector('#glowstick-left-bar'); 
+      // var tipLeftVert = new THREE.Vector3();
+      // var tipLeft = document.querySelector('#glowstick-left-tip');
+      
+
+      // tipLeftVert = tipLeft.object3D.getWorldPosition(tipLeftVert); 
+      // barLeft.setAttribute('geometry', {
+      //   primitive: 'triangle',
+      //   vertexA: posLeft,
+      //   vertexB: new THREE.Vector3(posLeft.x +0.005, posLeft.y + 0.005, posLeft.z + 0.005),
+      //   vertexC: tipLeftVert
+      // });
+      // barLeft.setAttribute('material', 'color:' + COLORS[gColorLeftIndex])
+
+
+      //barLeft.setAttribute('end', );
+
 
       //RIGHT
       var handRight = document.querySelector('#hand-right'); 
@@ -721,21 +766,19 @@ AFRAME.registerComponent('button-listener-right', {
       
       <!-- Hands -->
 
+      <a-triangle id="glowstick-left-bar" visible="false"  vertex-a="1 1 1" vertex-b="1 2 1" vertex-c="1 1 -1" color="blue" material="side: double;"  ></a-triangle>
+
+
       <a-entity  oculus-touch-controls="hand: left; model:true" id="hand-left" button-listener-left>
         <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
         <a-entity id="glowstick-left-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader: flat; color: green;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
-
-        <a-line id="glowstick-left-bar" position="0 0 0" rotation="0 0 0" material="visible:true; shader: flat; color: green;" ></a-entity>
-
-
-        <a-entity id="thumb-control-left" position="0 0.05 -0.01" rotation="40 0 0" material="visible:true; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
+        <a-entity id="thumb-control-left" position="0 0.05 -0.01" rotation="40 0 0" material="visible:false; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
       </a-entity>
 
       <a-entity  oculus-touch-controls="hand: right; model:true" id="hand-right"  button-listener-right>
         <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
         <a-entity id="glowstick-right-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader:flat; color: yellow;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
-
-        <a-entity id="thumb-control-right" position="0 0.05 -0.01" rotation="40 0 0" material="visible:true; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
+        <a-entity id="thumb-control-right" position="0 0.05 -0.01" rotation="40 0 0" material="visible:false; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
       </a-entity>
 
       <a-entity id="glowstick-left" position="0 0 0">

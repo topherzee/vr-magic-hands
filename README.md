@@ -20,16 +20,18 @@ Grip Buttons: Increments Size
 
 
 ## TODO
-When starting to draw - by default - do not connect. DONE.
 Touching trigger brings up wand.
+
+
+When starting to draw - by default - do not connect. DONE.
 Light comes from hand always. DONE.
 tip indicates drawing always. DONE.
 Tip color changes. DONE.
 
 Way to erase scene or line.
-thumbstick to change length.
-thunbstick to change color.
-Only one Beat Button.
+thumbstick to change length. DONE
+thunbstick to change color. DONE
+Only one Beat Button. DONE
 16 beats.
 
 ## WISH LIST
