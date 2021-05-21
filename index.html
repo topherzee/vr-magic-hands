@@ -44,12 +44,13 @@ var gSizeRightIndex = 0;
 var gTriggerLeftDown = false;
 var gTriggerRightDown = false;
 var gRightDrawing = false;
+var gLeftDrawing = false;
 
 var gGripLeftDown = false;
 var gGripRightDown = false;
 
 
-function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel, bCreateTriangle){
+function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel){
 
   console.log("trails: " + newPos)
 
@@ -58,7 +59,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   var groupEl = document.createElement('a-entity');
   sceneEl.appendChild(groupEl);
 
-  if (bCreateTriangle){
+
   var newEl1 = document.createElement('a-triangle');
   var newEl2 = document.createElement('a-triangle');
 
@@ -101,7 +102,6 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
   }
  
-}//if
 
 
   // groupEl.setAttribute('animation__scale', {
@@ -165,8 +165,8 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
     
 
-    var last_left_1 = {}
-    var last_left_2 = {}
+    var last_left_1 = new THREE.Vector3();
+    var last_left_2 = new THREE.Vector3();
     var last_right_1 = new THREE.Vector3();
     var last_right_2 = new THREE.Vector3();
 
@@ -365,6 +365,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
         });        
         el.addEventListener('triggerup', function (evt) {
           gTriggerLeftDown = false;
+          gLeftDrawing = false;
         });
 
         el.addEventListener('gripdown', function (evt) {
@@ -516,12 +517,14 @@ AFRAME.registerComponent('button-listener-right', {
       //Controllers
       var handLeft = document.querySelector('#hand-left'); 
       var posLeft = handLeft.getAttribute('position');
+      var posLeft2 = new THREE.Vector3();
       //const vecLeft = new THREE.Vector3();
       const quaternionLeft = new THREE.Quaternion();
       var rotLeft = handLeft.object3D.getWorldQuaternion(quaternionLeft);
 
       var handRight = document.querySelector('#hand-right'); 
       var posRight = handRight.getAttribute('position');
+      var posRight2 = new THREE.Vector3();
       const quaternionRight = new THREE.Quaternion();
       var rotRight = handRight.object3D.getWorldQuaternion(quaternionRight);
 
@@ -539,21 +542,22 @@ AFRAME.registerComponent('button-listener-right', {
       //LEFT
       if (gTriggerLeftDown){ 
 
-        var l1 = new THREE.Vector3();
-        var l2 = new THREE.Vector3();
-        last_left_1 = document.querySelector('#glowstick-left-1').object3D.getWorldPosition(l1);
-        last_left_2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(l2);
+        last_left_1 = document.querySelector('#glowstick-left-1').object3D.getWorldPosition(last_left_1);
+        last_left_2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(last_left_2);
 
         var eLeft = document.querySelector('#glowstick-left'); 
         eLeft.setAttribute('position', posLeft);
         eLeft.object3D.setRotationFromQuaternion(rotLeft)
-        
-        var n2 = new THREE.Vector3();
-        var posLeft2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(n2);
+        posLeft2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(posLeft2);
 
-        bCreateTriangle = !gYButtonDown;
-        //createTrailGlowstick(posLeft, posLeft2, '#00FF00', last_left_1, last_left_2, "left", velLeft)
-        createTrailGlowstick(posLeft, posLeft2, COLORS[gColorLeftIndex], last_left_1, last_left_2, "left", velLeft,bCreateTriangle)
+        if (!gLeftDrawing){
+          gLeftDrawing = true;
+          if (!gYButtonDown){
+            last_left_1.copy(posLeft);
+            last_left_2.copy(posLeft2);
+          }
+        }
+        createTrailGlowstick(posLeft, posLeft2, COLORS[gColorLeftIndex], last_left_1, last_left_2, "left", velLeft)
 
       }
 
@@ -565,19 +569,16 @@ AFRAME.registerComponent('button-listener-right', {
         var eRight = document.querySelector('#glowstick-right'); 
         eRight.setAttribute('position', posRight);
         eRight.object3D.setRotationFromQuaternion(rotRight)
-        var posRight2 = new THREE.Vector3();
         posRight2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(posRight2);
 
-        bCreateTriangle = !gBButtonDown;
-        console.log("right drawing: "+ gRightDrawing)
         if (!gRightDrawing){
-          console.log("SNAP RIGHT")
           gRightDrawing = true;
-          last_right_1.copy(posRight);
-          last_right_2.copy(posRight2);
-
+          if (!gBButtonDown){
+            last_right_1.copy(posRight);
+            last_right_2.copy(posRight2);
+          }
         }
-        createTrailGlowstick(posRight, posRight2, COLORS[gColorRightIndex], last_right_1, last_right_2, "right", velRight,bCreateTriangle)
+        createTrailGlowstick(posRight, posRight2, COLORS[gColorRightIndex], last_right_1, last_right_2, "right", velRight)
       }
 
     }, TICKS_PER_FRAME);
