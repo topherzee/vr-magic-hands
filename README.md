@@ -18,6 +18,28 @@ B/Y: Prevent trail connection. Set Beat with 2 clicks.
 
 Grip Buttons: Increments Size
 
+
+## TODO
+When starting to draw - by default - do not connect.
+Touching trigger brings up wand.
+Light comes from hand always.
+tip indicates drawing always. Tip color changes.
+Way to erase scene or line.
+thumbstick to change length.
+thunbstick to change color.
+Only one Beat Button.
+
+# BENDING
+## LOG
+
+Working on steering water once it is launched.
+
+## TODO
+Sommon the water back.
+Start with a small water - energize it by spinning it.
+Add texture /shader to water surface.
+
+
 ## Run Locally
 
 To Start
