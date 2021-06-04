@@ -11,6 +11,10 @@
     <!-- <script src="components/grab.js"></script> -->
     <!-- <script src="components/ground.js"></script>
     <script src="shaders/skyGradient.js"></script> -->
+
+    <script src="components/ground.js"></script>
+    <script src="shaders/skyGradient.js"></script>
+
     <script src="https://unpkg.com/aframe-event-set-component@4.0.1/dist/aframe-event-set-component.min.js"></script>
   
   <script>
@@ -18,9 +22,10 @@ console.log("STARTUP!")
 
 const VELOCITY_ON = false;
 
-const FADEOUT_MS = 1500;
+const FADEOUT_MS = 100;
 
-const MAX_PARTICLES = 150;
+const MAX_PARTICLES = 100;
+const MAX_FADES = 10;
 const VEL_FACTOR = 10;
 
 const GREY = 0;
@@ -35,8 +40,8 @@ const SIZES = [0.001, 0.005, 0.02, 0.05, 0.1, 0.2] //these get trippled.
 
 var gColorLeftIndex = 4;
 var gColorRightIndex = 5;
-var gColorSkyIndex = 1;
-var gColorGroundIndex = 1;
+var gColorSkyIndex = 2;
+var gColorGroundIndex = 2;
 
 var gSizeLeftIndex = 1;
 var gSizeRightIndex = 0;
@@ -44,6 +49,9 @@ var gSizeRightIndex = 0;
 
 var gTriggerLeftDown = false;
 var gTriggerRightDown = false;
+var gTriggerLeftTouch = false;
+var gTriggerRightTouch = false;
+
 var gRightDrawing = false;
 var gLeftDrawing = false;
 
@@ -52,9 +60,6 @@ var gGripRightDown = false;
 
 
 function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel){
-
-  // console.log("NEW: " + JSON.stringify(newPos) + " NEW2: " + JSON.stringify(newPos2))
-  // console.log("OLD: " + JSON.stringify(lastPos1) + "OLD2: " + JSON.stringify(lastPos2))
 
   var sceneEl = document.querySelector('a-scene');
 
@@ -69,8 +74,6 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   groupEl.appendChild(newEl2);
   newEl1.setAttribute('color', color);
   newEl2.setAttribute('color', color);
-  // newEl1.setAttribute('material','side: double; transparent: true;')
-  // newEl2.setAttribute('material','side: double; transparent: true;')
   newEl1.setAttribute('material','side: double; transparent: false;')
   newEl2.setAttribute('material','side: double; transparent: false;')
 
@@ -94,78 +97,114 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   if (false && newVel){
 
     var x = newPos.x + newVel.x;
-  var y=  newPos.y + newVel.y;
-  var z= newPos.z + newVel.z;
+    var y=  newPos.y + newVel.y;
+    var z= newPos.z + newVel.z;
 
-  newEl1.setAttribute('animation__move', {
+    newEl1.setAttribute('animation__move', {
           property: 'geometry.vertexA',
           dur: 2000,
           easing: 'linear',
           to: '' + x + ' ' + y + ' ' + z
         })
-
   }
  
 
-
-  // groupEl.setAttribute('animation__scale', {
-  //   property: 'scale',
-  //   dur: FADEOUT_MS,
-  //   easing: 'easeOutQuad',
-  //   to: '0 0 0'
-  // })
-
-  // newEl1.setAttribute('animation__opacity', {
-  //   property: 'material.opacity',
-  //   dur: FADEOUT_MS,
-  //   easing: 'easeOutQuad',
-  //   to: '0'
-  // })
-  // newEl2.setAttribute('animation__opacity', {
-  //   property: 'material.opacity',
-  //   dur: FADEOUT_MS,
-  //   easing: 'easeOutQuad',
-  //   to: '0'
-  // })
-
   //Destroy old one and register new one
 
-  if (hand=="left"){
-
-    if (aParticlesLeft[iParticleLeft]){
-      var el = aParticlesLeft[iParticleLeft];
+    if (aParts[hand][iPart[hand]]){
+      var el = aParts[hand][iPart[hand]];
       el.parentNode.removeChild(el);
     }
-    aParticlesLeft[iParticleLeft] = groupEl;
-    iParticleLeft ++;
-    if (iParticleLeft>MAX_PARTICLES){
-      iParticleLeft = 0;
+
+    aParts[hand][iPart[hand]] = groupEl;
+    iPart[hand] ++;
+    if (iPart[hand] > MAX_PARTICLES){
+      iPart[hand] = 0;
     } 
-
-  }else{
-
-    if (aParticlesRight[iParticleRight]){
-      var el = aParticlesRight[iParticleRight];
-      el.parentNode.removeChild(el);
-    }
-    aParticlesRight[iParticleRight] = groupEl;
-    iParticleRight ++;
-    if (iParticleRight>MAX_PARTICLES){
-      iParticleRight = 0;
-    } 
-
-  }
-
 
 }
 
 
 
-    var aParticlesLeft = [];
-    var aParticlesRight = [];
-    
-    var iParticleLeft = 0;
-    var iParticleRight = 0;
+function createFadeGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel){
+
+var sceneEl = document.querySelector('a-scene');
+
+var groupEl = document.createElement('a-entity');
+sceneEl.appendChild(groupEl);
+
+var newEl1 = document.createElement('a-triangle');
+var newEl2 = document.createElement('a-triangle');
+
+groupEl.appendChild(newEl1);
+groupEl.appendChild(newEl2);
+newEl1.setAttribute('color', color);
+newEl2.setAttribute('color', color);
+newEl1.setAttribute('material','side: double; transparent: true;')
+newEl2.setAttribute('material','side: double; transparent: true;')
+
+newEl1.setAttribute('geometry', {
+  primitive: 'triangle',
+  vertexA: newPos,
+  vertexB: lastPos1,
+  vertexC: lastPos2
+});
+
+newEl2.setAttribute('geometry', {
+  primitive: 'triangle',
+  vertexA: newPos,
+  vertexB: newPos2,
+  vertexC: lastPos2
+});
+
+
+newEl1.setAttribute('animation__opacity', {
+  property: 'material.opacity',
+  dur: FADEOUT_MS,
+  easing: 'easeOutQuad',
+  to: '0'
+})
+newEl2.setAttribute('animation__opacity', {
+  property: 'material.opacity',
+  dur: FADEOUT_MS,
+  easing: 'easeOutQuad',
+  to: '0'
+})
+
+//Destroy old one and register new one
+
+
+  if (aFades[hand][iFade[hand]]){
+    var el = aFades[hand][iFade[hand]];
+    el.parentNode.removeChild(el);
+  }
+
+  aFades[hand][iFade[hand]] = groupEl;
+  iFade[hand] ++;
+  if (iFade[hand] > MAX_FADES){
+    iFade[hand] = 0;
+  } 
+
+}
+
+const L = 0;
+const R = 1;
+
+var aParts= [];
+aParts[L] = [];
+aParts[R] = [];
+
+var iPart = [];
+iPart[L] = 0;
+iPart[R] = 0;
+
+var aFades= [];
+aFades[L] = [];
+aFades[R] = [];
+
+var iFade = [];
+iFade[L] = 0;
+iFade[R] = 0;
 
     
 
@@ -268,7 +307,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
     }
 
-    var gBeatState = "BEATING"// WAIT_START, "WAIT_END", "BEATING"
+    var gBeatState = "WAIT_START"// WAIT_START, "WAIT_END", "BEATING"
     var gBeatStartMS = Date.now();
     var gBeatPeriodMS = 500;
     var gLastBeat = 0;
@@ -389,6 +428,13 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
           gLeftDrawing = false;
         });
 
+        el.addEventListener('triggertouchstart', function (evt) {
+          gTriggerLeftTouch = true;
+        });        
+        el.addEventListener('triggertouchend', function (evt) {
+          gTriggerLeftTouch = false;
+        });
+
 
         el.addEventListener('gripdown', function (evt) {
           gGripLeftDown = true;
@@ -467,6 +513,14 @@ AFRAME.registerComponent('button-listener-right', {
         el.addEventListener('triggerup', function (evt) {
           gTriggerRightDown = false;
           gRightDrawing = false;
+        });
+
+
+        el.addEventListener('triggertouchstart', function (evt) {
+          gTriggerRightTouch = true;
+        });        
+        el.addEventListener('triggertouchend', function (evt) {
+          gTriggerRightTouch = false;
         });
 
         el.addEventListener('gripdown', function (evt) {
@@ -642,10 +696,13 @@ AFRAME.registerComponent('button-listener-right', {
 
         //createTrail(intersectionPosition, '#FFFF00', velCursor, quaternion)
       }
-      var sky = document.querySelector('#sky'); 
-      sky.setAttribute('background', "color:" + COLORS[gColorSkyIndex]);
-      var ground = document.querySelector('#ground'); 
-      ground.setAttribute('color', COLORS[gColorGroundIndex]);
+
+      // SET COLOR OF SKY AND GROUND
+
+      // var sky = document.querySelector('#sky'); 
+      // sky.setAttribute('background', "color:" + COLORS[gColorSkyIndex]);
+      // var ground = document.querySelector('#ground'); 
+      // ground.setAttribute('color', COLORS[gColorGroundIndex]);
        
       var tipLeft = document.querySelector('#glowstick-left-tip'); 
       tipLeft.setAttribute('material', 'color:' + COLORS[gColorLeftIndex])
@@ -698,7 +755,7 @@ AFRAME.registerComponent('button-listener-right', {
 
 
       //LEFT
-      if (gTriggerLeftDown){ 
+      if (gTriggerLeftDown || gTriggerLeftTouch){ 
 
         last_left_1 = document.querySelector('#glowstick-left-1').object3D.getWorldPosition(last_left_1);
         last_left_2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(last_left_2);
@@ -715,11 +772,16 @@ AFRAME.registerComponent('button-listener-right', {
             last_left_2.copy(posLeft2);
           }
         }
-        createTrailGlowstick(posLeft, posLeft2, COLORS[gColorLeftIndex], last_left_1, last_left_2, "left", velLeft)
 
+        if (gTriggerLeftDown){
+          createTrailGlowstick(posLeft, posLeft2, COLORS[gColorLeftIndex], last_left_1, last_left_2, L, velLeft)
+        }else if (gTriggerLeftTouch){
+          createFadeGlowstick(posLeft, posLeft2, COLORS[gColorLeftIndex], last_left_1, last_left_2, L, velLeft)
+        }
+        
       }
 
-      if (gTriggerRightDown){
+      if (gTriggerRightDown || gTriggerRightTouch){
 
         last_right_1 = document.querySelector('#glowstick-right-1').object3D.getWorldPosition(last_right_1);
         last_right_2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(last_right_2);
@@ -736,7 +798,14 @@ AFRAME.registerComponent('button-listener-right', {
             last_right_2.copy(posRight2);
           }
         }
-        createTrailGlowstick(posRight, posRight2, COLORS[gColorRightIndex], last_right_1, last_right_2, "right", velRight)
+
+        if (gTriggerRightDown){
+          createTrailGlowstick(posRight, posRight2, COLORS[gColorRightIndex], last_right_1, last_right_2, R, velRight)
+        }else if (gTriggerRightTouch){
+          createFadeGlowstick(posRight, posRight2, COLORS[gColorRightIndex], last_right_1, last_right_2, R, velRight)
+        }
+        //
+       
       
         // // last_right_1 = document.querySelector('#glowstick-right-1').object3D.getWorldPosition(last_right_1);
         // // last_right_2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(last_right_2);
@@ -763,6 +832,11 @@ AFRAME.registerComponent('button-listener-right', {
       raycaster="objects: [cube]" fog="color: #bc483e; near: 0; far: 65;"
       background="color: blue"
       >
+
+      <a-entity id="sky" cursor-listener
+      geometry="primitive: sphere; radius: 65;"
+      material="shader: skyGradient; colorTop: #353449; colorBottom: #BC483E; side: back"></a-entity>
+
       
       <!-- Hands -->
 
@@ -798,6 +872,8 @@ AFRAME.registerComponent('button-listener-right', {
 
 
       <a-assets>
+        <a-asset-item id="ground" src="https://cdn.aframe.io/examples/tracked-controls/ground.glb"></a-asset-item>
+
         <a-mixin id="cube"
                  geometry="primitive: box; height: 0.30; width: 0.30; depth: 0.30"
                  material="color: #EF2DFF;"></a-mixin>
@@ -812,9 +888,10 @@ AFRAME.registerComponent('button-listener-right', {
 
         <a-entity id="marker"  class="cube" mixin="cube" position="0 1.95 0" material="color: #999999;visible:false;"></a-entity>
 
-        <a-plane id="ground" material="shader: flat;" color="#000" rotation="-90 0 0" height="10" width="10"></a-plane>
+        <!-- <a-plane id="ground" material="shader: flat;" color="#000" rotation="-90 0 0" height="10" width="10"></a-plane> -->
+        <a-entity ground ></a-entity>
 
-         <a-entity light="type: point; color: #f4f4f4; intensity: 0.1; distance: 0" position="-2.5 1.2 2.2"></a-entity>
+        <a-entity light="type: point; color: #f4f4f4; intensity: 0.1; distance: 0" position="-2.5 1.2 2.2"></a-entity>
          <a-entity light="type: point; color: #f4f4f4; intensity: 0.1; distance: 0" position="-20 -7 -40"></a-entity>
          <a-entity light="type: ambient; color: #f4f4f4; intensity: 0.25;" position="-8 10 -18"></a-entity>
       </a-entity>
