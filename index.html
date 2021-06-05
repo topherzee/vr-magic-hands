@@ -39,29 +39,26 @@ const RED = 6;
 const COLORS = ["grey","white","black","yellow","green","blue","red"];//,"pink"
 const SIZES = [0.001, 0.005, 0.02, 0.05, 0.1, 0.2] //these get trippled.
 
-var gColorLeftIndex = 4;
-var gColorRightIndex = 5;
+const L = 0; //LEFT
+const R = 1; //RIGHT
+
+var gColorIndex = [4,5];
 var gColorSkyIndex = 2;
 var gColorGroundIndex = 2;
 
-var gSizeLeftIndex = 1;
-var gSizeRightIndex = 0;
+var gSizeIndex = [1,0];
+var gDrawing= [false, false];
+
+var gTriggerDown = [false,false];
+var gTriggerTouch = [false, false];
+var gGripDown = [false,false];
+var gAX_Down = [false,false];
+var gBY_Down = [false,false];
+
+var gIsMouseDown = false;
 
 
-var gTriggerLeftDown = false;
-var gTriggerRightDown = false;
-var gTriggerLeftTouch = false;
-var gTriggerRightTouch = false;
-
-var gRightDrawing = false;
-var gLeftDrawing = false;
-
-var gGripLeftDown = false;
-var gGripRightDown = false;
-
-const L = 0;
-const R = 1;
-
+//DRAWING PARTS OF LINE.
 var aParts= [];
 aParts[L] = [];
 aParts[R] = [];
@@ -79,13 +76,29 @@ iFade[L] = 0;
 iFade[R] = 0;
 
 
-var gRecordState =  "PLAYING"; //"RECORDING", "PLAYING", "NOTHING"
+var gRecordState =  "NOTHING"; //"RECORDING", "PLAYING", "NOTHING"
 const RECORD_MAX = 500;
 
 var aRecord = [];
 aRecord[L] = [];
 aRecord[R] = [];
 var iRecord = 0;
+
+var MAX_POS = 3;
+
+var aPos = []
+aPos[L] = [];
+aPos[R] = [];
+
+var aPosCursor = []
+
+var velCursor = {"x":0,"y":0,"z":0};
+
+var gVel = [];
+gVel[L] = {"x":0,"y":0,"z":0};
+gVel[R] = {"x":0,"y":0,"z":0};
+   
+
 
 // if (gRecordState === "PLAYING"){
 //   //LOAD FROM LOCAL STORAGE
@@ -119,9 +132,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
     vertexB: lastPos1,
     vertexC: lastPos2
   });
-  // var l2 = new THREE.Vector3();
-  // var left_2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(l2);
-  
+
   newEl2.setAttribute('geometry', {
     primitive: 'triangle',
     vertexA: newPos,
@@ -225,10 +236,14 @@ newEl2.setAttribute('animation__opacity', {
 
   
 
-    var last_left_1 = new THREE.Vector3();
-    var last_left_2 = new THREE.Vector3();
-    var last_right_1 = new THREE.Vector3();
-    var last_right_2 = new THREE.Vector3();
+    var gLastPos1 = [];
+    gLastPos1[L] = new THREE.Vector3();
+    gLastPos1[R] = new THREE.Vector3();
+    
+    var gLastPos2 = [];
+    gLastPos2[L] = new THREE.Vector3();
+    gLastPos2[R] = new THREE.Vector3();
+
 
     function calcVelocity(aPos, pos){
 
@@ -252,76 +267,42 @@ newEl2.setAttribute('animation__opacity', {
       return vel;
     }
 
-    var MAX_POS = 3;
-    var aPosLeft = []
-    var aPosRight = []
-    var aPosCursor = []
-    
-    var velCursor = {"x":0,"y":0,"z":0};
-    var velLeft = {"x":0,"y":0,"z":0};
-    var velRight = {"x":0,"y":0,"z":0};
 
-    function incrementColor(hand,color,amount){
-      // color++;
-      // if (color >= COLORS.length){
-      //   color = 0;
-      // }
-      if (hand=="left"){
-        gColorLeftIndex+= amount;
-        if (gColorLeftIndex >= COLORS.length){
-          gColorLeftIndex = 0;
-        }else if (gColorLeftIndex<0){
-          gColorLeftIndex = COLORS.length;
-        }
-      }else{
-        gColorRightIndex+= amount;
-        if (gColorRightIndex >= COLORS.length){
-          gColorRightIndex = 0;
-        }else if (gColorRightIndex<0){
-          gColorRightIndex = COLORS.length;
-        }
-      }
+    function incrementColor(H,color,amount){
 
+        gColorIndex[H]+= amount;
+        if (gColorIndex[H] >= COLORS.length){
+          gColorIndex[H] = 0;
+        }else if (gColorIndex[H]<0){
+          gColorIndex[H] = COLORS.length;
+        }
     }
 
-    function incrementSize(hand, amount){
+    function incrementSize(H, amount){
 
-      
+      var hand;
       var f,p, point;
-      if (hand=="left"){
-        gSizeLeftIndex+= amount;
-        if (gSizeLeftIndex >= SIZES.length){
-          gSizeLeftIndex = 0;
-        }else if (gSizeLeftIndex<0){
-          gSizeLeftIndex = SIZES.length;
-        }
 
-        f = SIZES[gSizeLeftIndex];
-        p = {'x':0, 'y':f*3, 'z':-f*2}
-        
-        point = document.querySelector('#glowstick-left-2'); 
-        point.setAttribute('position', p)
-        point = document.querySelector('#glowstick-left-tip'); 
-        point.setAttribute('position', p)
-
+      if (H===L){
+        hand = "left"
       }else{
-        gSizeRightIndex+= amount;
-        if (gSizeRightIndex >= SIZES.length){
-          gSizeRightIndex = 0;
-        }else if (gSizeRightIndex<0){
-          gSizeRightIndex = SIZES.length;
-        }
-
-        f = SIZES[gSizeRightIndex];
-        p = {'x':0, 'y':f*3, 'z':-f*2}
-        
-        point = document.querySelector('#glowstick-right-2'); 
-        point.setAttribute('position', p)
-        point = document.querySelector('#glowstick-right-tip'); 
-        point.setAttribute('position', p)
-        
+        hand = "right"
       }
 
+      gSizeIndex[H]+= amount;
+      if (gSizeIndex[H] >= SIZES.length){
+        gSizeIndex[H] = 0;
+      }else if (gSizeIndex[H]<0){
+        gSizeIndex[H] = SIZES.length;
+      }
+
+      f = SIZES[gSizeIndex[H]];
+      p = {'x':0, 'y':f*3, 'z':-f*2}
+      
+      point = document.querySelector('#glowstick-' + hand + '-2'); 
+      point.setAttribute('position', p)
+      point = document.querySelector('#glowstick-'+ hand + '-tip'); 
+      point.setAttribute('position', p)
     }
 
     var gBeatState = "WAIT_START"// WAIT_START, "WAIT_END", "BEATING"
@@ -403,13 +384,13 @@ newEl2.setAttribute('animation__opacity', {
         // var el = this.el;
         // var cameraPostion = new THREE.Vector3();
         // var posLeft = el.object3D.getWorldPosition(cameraPostion)
-        // var velLeft = calcVelocity(aPosLeft, posLeft)
+        // var velLeft = calcVelocity(aPos[L], posLeft)
 
         // iPosLeft ++;
         // if (iPosLeft > MAX_POS){
         //   iPosLeft = 0;
         // }
-        // aPosLeft[iPosLeft] = posLeft;
+        // aPos[L][iPosLeft] = posLeft;
 
       },
 
@@ -422,43 +403,43 @@ newEl2.setAttribute('animation__opacity', {
         //   createTrail(newPos)
         // });
         el.addEventListener('xbuttondown', function (evt) {
-          gXButtonDown = true;
+          gAX_Down[L] = true;
           
         });
         el.addEventListener('xbuttonup', function (evt) {
-          gXButtonDown = false;
+          gAX_Down[L] = false;
         });
         el.addEventListener('ybuttondown', function (evt) {
-          gYButtonDown = true;
+          gBY_Down[L] = true;
           
-          // incrementColor("left", gColorLeftIndex);
+          // incrementColor(L, gColorIndex[L]);
         });
         el.addEventListener('ybuttonup', function (evt) {
-          gYButtonDown = false;
+          gBY_Down[L] = false;
         });
 
         el.addEventListener('triggerdown', function (evt) {
-          gTriggerLeftDown = true;
+          gTriggerDown[L] = true;
         });        
         el.addEventListener('triggerup', function (evt) {
-          gTriggerLeftDown = false;
-          gLeftDrawing = false;
+          gTriggerDown[L] = false;
+          gDrawing[L] = false;
         });
 
         el.addEventListener('triggertouchstart', function (evt) {
-          gTriggerLeftTouch = true;
+          gTriggerTouch[L] = true;
         });        
         el.addEventListener('triggertouchend', function (evt) {
-          gTriggerLeftTouch = false;
+          gTriggerTouch[L] = false;
         });
 
 
         el.addEventListener('gripdown', function (evt) {
-          gGripLeftDown = true;
+          gGripDown[L] = true;
           setBeat();
         });        
         el.addEventListener('gripup', function (evt) {
-          gGripLeftDown = false;
+          gGripDown[L] = false;
         });
 
         el.addEventListener('thumbsticktouchstart', function (evt) {
@@ -475,19 +456,19 @@ newEl2.setAttribute('animation__opacity', {
           
           if (!gLeftThumbSpent){
             if (evt.detail.y > 0.65) { //DOWN
-              incrementSize("left", -1); 
+              incrementSize(L, -1); 
               gLeftThumbSpent = true;
             }
             if (evt.detail.y < -0.65) {  //UP
-              incrementSize("left", 1); 
+              incrementSize(L, 1); 
               gLeftThumbSpent = true;
             }
             if (evt.detail.x < -0.65) { //LEFT
-                incrementColor("left", gColorLeftIndex, -1); 
+                incrementColor(L, gColorIndex[L], -1); 
                 gLeftThumbSpent = true;
             }
             if (evt.detail.x > 0.65) { //RIGHT
-                incrementColor("left", gColorLeftIndex, 1); 
+                incrementColor(L, gColorIndex[L], 1); 
                 gLeftThumbSpent = true;
             }
           }//if
@@ -509,43 +490,43 @@ AFRAME.registerComponent('button-listener-right', {
       var el = this.el;
 
       el.addEventListener('abuttondown', function (evt) {
-        gAButtonDown = true;
+        gAX_Down[R] = true;
         
       });
       el.addEventListener('abuttonup', function (evt) {
-        gAButtonDown = false;
+        gAX_Down[R] = false;
       });
       el.addEventListener('bbuttondown', function (evt) {
-        gBButtonDown = true;
+        gBY_Down[R] = true;
         
-        // incrementColor("right", gColorRightIndex);
+        // incrementColor(R, gColorIndex[R]);
       });
       el.addEventListener('bbuttonup', function (evt) {
-        gBButtonDown = false;
+        gBY_Down[R] = false;
       });
 
       el.addEventListener('triggerdown', function (evt) {
-          gTriggerRightDown = true;
+          gTriggerDown[R] = true;
         });        
         el.addEventListener('triggerup', function (evt) {
-          gTriggerRightDown = false;
-          gRightDrawing = false;
+          gTriggerDown[R] = false;
+          gDrawing[R] = false;
         });
 
 
         el.addEventListener('triggertouchstart', function (evt) {
-          gTriggerRightTouch = true;
+          gTriggerTouch[R] = true;
         });        
         el.addEventListener('triggertouchend', function (evt) {
-          gTriggerRightTouch = false;
+          gTriggerTouch[R] = false;
         });
 
         el.addEventListener('gripdown', function (evt) {
-          gGripRightDown = true;
+          gGripDown[R] = true;
           setBeat();
         });        
         el.addEventListener('gripup', function (evt) {
-          gGripRightDown = false;
+          gGripDown[R] = false;
         });
 
         el.addEventListener('thumbsticktouchstart', function (evt) {
@@ -561,19 +542,19 @@ AFRAME.registerComponent('button-listener-right', {
           
           if (!gRightThumbSpent){
             if (evt.detail.y > 0.65) { //DOWN
-              incrementSize("right", -1); 
+              incrementSize(R, -1); 
               gRightThumbSpent = true;
             }
             if (evt.detail.y < -0.65) {  //UP
-              incrementSize("right", 1); 
+              incrementSize(R, 1); 
               gRightThumbSpent = true;
             }
             if (evt.detail.x < -0.65) { //LEFT
-                incrementColor("right", gColorRightIndex, -1); 
+                incrementColor(R, gColorIndex[R], -1); 
                 gRightThumbSpent = true;
             }
             if (evt.detail.x > 0.65) { //RIGHT
-                incrementColor("right", gColorRightIndex, 1); 
+                incrementColor(R, gColorIndex[R], 1); 
                 gRightThumbSpent = true;
             }
           }//if
@@ -586,12 +567,6 @@ AFRAME.registerComponent('button-listener-right', {
 });
 
 
-    var gIsMouseDown = false;
-
-    var gXButtonDown = false;
-    var gYButtonDown = false;
-    var gAButtonDown = false;
-    var gBButtonDown = false;
 
 
     // GAME LOOP
@@ -599,11 +574,11 @@ AFRAME.registerComponent('button-listener-right', {
 
         function BeeFlag(beat){
           if (beat==1 || beat==3 || beat==5 || beat==7){
-            gColorRightIndex = 1;
-            gColorLeftIndex = 3;
+            gColorIndex[R] = 1;
+            gColorIndex[L] = 3;
           }else{
-            gColorRightIndex = 2;
-            gColorLeftIndex = 2;
+            gColorIndex[R] = 2;
+            gColorIndex[L] = 2;
           }
         }
 
@@ -613,11 +588,11 @@ AFRAME.registerComponent('button-listener-right', {
           gColorGroundIndex = BLACK;
 
           if (beat==1 || beat==3 || beat==5 || beat==7){
-            gColorRightIndex = 1;
-            gColorLeftIndex = 3;
+            gColorIndex[R] = 1;
+            gColorIndex[L] = 3;
           }else{
-            gColorRightIndex = 2;
-            gColorLeftIndex = 2;
+            gColorIndex[R] = 2;
+            gColorIndex[L] = 2;
           }
 
           if (beat < 5){
@@ -637,17 +612,17 @@ AFRAME.registerComponent('button-listener-right', {
 
           //every 4th beat.
           if (beat % 4){
-            gColorRightIndex = WHITE;
-            gColorLeftIndex = RED; //blue
+            gColorIndex[R] = WHITE;
+            gColorIndex[L] = RED; //blue
 
-            gSizeRightIndex = 3;
-            gSizeLeftIndex = 1;
+            gSizeIndex[R] = 3;
+            gSizeIndex[L] = 1;
           }else{
-            gColorRightIndex = BLUE; //blue
-            gColorLeftIndex = WHITE;
+            gColorIndex[R] = BLUE; //blue
+            gColorIndex[L] = WHITE;
 
-            gSizeRightIndex = 1;
-            gSizeLeftIndex = 0;
+            gSizeIndex[R] = 1;
+            gSizeIndex[L] = 0;
           }
         }
 
@@ -656,17 +631,17 @@ AFRAME.registerComponent('button-listener-right', {
           gColorGroundIndex = BLACK;
           
           if (Math.trunc(beat/4) % 2){
-            gColorRightIndex = BLACK;
-            gColorLeftIndex = RED; //blue
+            gColorIndex[R] = BLACK;
+            gColorIndex[L] = RED; //blue
 
-            gSizeRightIndex = 4;
-            gSizeLeftIndex = 2;
+            gSizeIndex[R] = 4;
+            gSizeIndex[L] = 2;
           }else{
-            gColorRightIndex = RED; //blue
-            gColorLeftIndex = YELLOW;
+            gColorIndex[R] = RED; //blue
+            gColorIndex[L] = YELLOW;
 
-            gSizeRightIndex = 2;
-            gSizeLeftIndex = 0;
+            gSizeIndex[R] = 2;
+            gSizeIndex[L] = 0;
           }
         }
 
@@ -674,18 +649,18 @@ AFRAME.registerComponent('button-listener-right', {
           gColorSkyIndex = BLACK;
           gColorGroundIndex = BLACK;
           
-          gSizeRightIndex = 2;
-          gSizeLeftIndex = 4;
+          gSizeIndex[R] = 2;
+          gSizeIndex[L] = 4;
           if (beat % 2){
-            gColorRightIndex = BLACK;
+            gColorIndex[R] = BLACK;
           }else{
-            gColorRightIndex = RED; 
+            gColorIndex[R] = RED; 
           }
 
           if (beat % 8){
-            gColorLeftIndex = BLACK;
+            gColorIndex[L] = BLACK;
           }else{
-            gColorLeftIndex = YELLOW; 
+            gColorIndex[L] = YELLOW; 
           }
 
         }
@@ -733,12 +708,6 @@ AFRAME.registerComponent('button-listener-right', {
         }
         var intersection = cursor.components.raycaster.intersections[0];
         var intersectionPosition = intersection.point;
-
-        const quaternion = new THREE.Quaternion();
-        // quaternion._x = 0.5;
-        // quaternion._z = 0.2;
-
-        //createTrail(intersectionPosition, '#FFFF00', velCursor, quaternion)
       }
 
       // SET COLOR OF SKY AND GROUND
@@ -747,166 +716,105 @@ AFRAME.registerComponent('button-listener-right', {
       // sky.setAttribute('background', "color:" + COLORS[gColorSkyIndex]);
       // var ground = document.querySelector('#ground'); 
       // ground.setAttribute('color', COLORS[gColorGroundIndex]);
-       
 
-
-      if (gRecordState === "PLAYING"){
-        var handLeft = document.querySelector('#hand-left'); 
-
-        posLeft = aRecord[L][iRecord].posLeft;
-        rotLeft = aRecord[L][iRecord].rotLeft;
-
-        handLeft.setAttribute('position', posLeft)
-
-        var r = rotLeft;
-        var q = new THREE.Quaternion(r._x, r._y, r._z, r._w);
-        handLeft.object3D.setRotationFromQuaternion(q);
-
-        iRecord ++;
-        if (iRecord >= aRecord[L].length){
-          iRecord = 0;
-        }
-
-        gTriggerLeftDown = aRecord[L][iRecord].buttons.trigger_is_down;
-      }
-
-
-
-      var tipLeft = document.querySelector('#glowstick-left-tip'); 
-      tipLeft.setAttribute('material', 'color:' + COLORS[gColorLeftIndex])
-      var tipRight = document.querySelector('#glowstick-right-tip'); 
-      tipRight.setAttribute('material', 'color:' + COLORS[gColorRightIndex])
-
-
-
-
-
-    
-      //Controllers'
-      
-      //LEFT
-      var handLeft = document.querySelector('#hand-left'); 
-      var posLeft = handLeft.getAttribute('position');
-      var posLeft2 = new THREE.Vector3();
-      const quaternionLeft = new THREE.Quaternion();
-      var rotLeft = handLeft.object3D.getWorldQuaternion(quaternionLeft);
-      
-      // if (gRecordState === "PLAYING"){
-      //   posLeft = aRecord[L][iRecord].posLeft;
-      //   rotLeft = aRecord[L][iRecord].rotLeft;
-      //   //console.log("playback posL" + JSON.stringify(posLeft,null,2))
-      //   gTriggerLeftDown = aRecord[L][iRecord].buttons.trigger_is_down;
-      //   iRecord ++;
-      //   if (iRecord >= aRecord[L].length){
-      //     iRecord = 80;
-      //   }
-
-      //   gTriggerLeftDown = true;
-      // }
-      
-
-
-
-      //RIGHT
-      var handRight = document.querySelector('#hand-right'); 
-      var posRight = handRight.getAttribute('position');
-      var posRight2 = new THREE.Vector3();
-      const quaternionRight = new THREE.Quaternion();
-      var rotRight = handRight.object3D.getWorldQuaternion(quaternionRight);
-
-      velLeft = calcVelocity(aPosLeft, posLeft);
-      velRight = calcVelocity(aPosRight, posRight);
+      gameLoop_Hand(L,"left");
+      gameLoop_Hand(R,"right");
 
       if (gRecordState === "RECORDING"){
-
-        if (aRecord[L].length < RECORD_MAX){
-
-          var hand = {
-            "posLeft": {...posLeft},
-            "rotLeft": {...rotLeft},
-            "buttons" : {
-              "trigger_is_down": gTriggerLeftDown
-            }
-          }
-
-          aRecord[L].push(hand);
-        }
-
-        if (aRecord[L].length === (RECORD_MAX-1)){
+          if (aRecord[L].length === (RECORD_MAX-1)){
           //console.log(JSON.stringify(aRecord[L],null,2));
           console.log("RECORDING SAVED.")
-          localStorage.setItem('vr-recording', JSON.stringify(aRecord[L],null,2));
+          localStorage.setItem('vr-recording', JSON.stringify(aRecord,null,2));
         }
-
       }
+    }
 
 
-      //LEFT
-      if (gTriggerLeftDown || gTriggerLeftTouch){ 
+    function gameLoop_Hand(H, handString){
 
-        last_left_1 = document.querySelector('#glowstick-left-1').object3D.getWorldPosition(last_left_1);
-        last_left_2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(last_left_2);
+      var q;
 
-        var eLeft = document.querySelector('#glowstick-left'); 
-        eLeft.setAttribute('position', posLeft);
-        eLeft.object3D.setRotationFromQuaternion(rotLeft)
-        posLeft2 = document.querySelector('#glowstick-left-2').object3D.getWorldPosition(posLeft2);
+      if (gRecordState === "PLAYING"){
+        
+        var elHand = document.querySelector('#hand-' + handString); 
 
-        if (!gLeftDrawing){
-          gLeftDrawing = true;
-          if (!gYButtonDown){
-            last_left_1.copy(posLeft); //copy posLeft into last_left
-            last_left_2.copy(posLeft2);
-          }
-        }
+        pos = aRecord[L][iRecord].pos;
+        rot = aRecord[L][iRecord].rot;
 
-        if (gTriggerLeftDown){
-          createTrailGlowstick(posLeft, posLeft2, COLORS[gColorLeftIndex], last_left_1, last_left_2, L, velLeft)
-        }else if (gTriggerLeftTouch){
-          createFadeGlowstick(posLeft, posLeft2, COLORS[gColorLeftIndex], last_left_1, last_left_2, L, velLeft)
+        elHand.setAttribute('position', pos)
+
+        var r = rot;
+        q = new THREE.Quaternion(r._x, r._y, r._z, r._w);
+        elHand.object3D.setRotationFromQuaternion(q);
+
+        gTriggerDown[H] = aRecord[H][iRecord].buttons.trigger_is_down;
+
+        iRecord ++;
+        if (iRecord >= aRecord[H].length){
+          iRecord = 0;
         }
         
       }
 
-      if (gTriggerRightDown || gTriggerRightTouch){
+      var elTip = document.querySelector('#glowstick-' + handString + '-tip'); 
+      elTip.setAttribute('material', 'color:' + COLORS[gColorIndex[H]])
 
-        last_right_1 = document.querySelector('#glowstick-right-1').object3D.getWorldPosition(last_right_1);
-        last_right_2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(last_right_2);
+      //Controllers'
 
-        var eRight = document.querySelector('#glowstick-right'); 
-        eRight.setAttribute('position', posRight);
-        eRight.object3D.setRotationFromQuaternion(rotRight)
-        posRight2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(posRight2);
+      var elHand = document.querySelector('#hand-' + handString); 
+      var pos = elHand.getAttribute('position');
+      var pos2 = new THREE.Vector3();
+      //const q = new THREE.Quaternion();
+      var rot = elHand.object3D.getWorldQuaternion(q);
+      
+      gVel[H] = calcVelocity(aPos[H], pos);
+      //gVel[R] = calcVelocity(aPos[R], posRight);
 
-        if (!gRightDrawing){
-          gRightDrawing = true;
-          if (!gBButtonDown){
-            last_right_1.copy(posRight);
-            last_right_2.copy(posRight2);
+      if (gRecordState === "RECORDING"){
+
+        if (aRecord[H].length < RECORD_MAX){
+
+          var hand = {
+            "pos": {...pos},
+            "rot": {...rot},
+            "buttons" : {
+              "trigger_is_down": gTriggerDown[H]
+            }
+          }
+
+          aRecord[H].push(hand);
+        }
+      }
+
+
+      if (gTriggerDown[H] || gTriggerTouch[H]){ 
+
+        gLastPos1[H] = document.querySelector('#glowstick-' + handString + '-1').object3D.getWorldPosition(gLastPos1[H]);
+        gLastPos2[H] = document.querySelector('#glowstick-' + handString + '-2').object3D.getWorldPosition(gLastPos2[H]);
+
+        var elGlowStick = document.querySelector('#glowstick-' + handString ); 
+        elGlowStick.setAttribute('position', pos);
+        elGlowStick.object3D.setRotationFromQuaternion(rot)
+        pos2 = document.querySelector('#glowstick-' + handString + '-2').object3D.getWorldPosition(pos2);
+
+        if (!gDrawing[H]){
+          gDrawing[H] = true;
+          if (!gBY_Down[H]){
+            gLastPos1[H].copy(pos); //copy pos into lastPos
+            gLastPos2[H].copy(pos2);
           }
         }
 
-        if (gTriggerRightDown){
-          createTrailGlowstick(posRight, posRight2, COLORS[gColorRightIndex], last_right_1, last_right_2, R, velRight)
-        }else if (gTriggerRightTouch){
-          createFadeGlowstick(posRight, posRight2, COLORS[gColorRightIndex], last_right_1, last_right_2, R, velRight)
+        if (gTriggerDown[H]){
+          createTrailGlowstick(pos, pos2, COLORS[gColorIndex[H]], gLastPos1[H], gLastPos2[H], H, gVel[H])
+        }else if (gTriggerTouch[H]){
+          createFadeGlowstick(pos, pos2, COLORS[gColorIndex[H]], gLastPos1[H], gLastPos2[H], H, gVel[H])
         }
-        //
-       
-      
-        // // last_right_1 = document.querySelector('#glowstick-right-1').object3D.getWorldPosition(last_right_1);
-        // // last_right_2 = document.querySelector('#glowstick-right-2').object3D.getWorldPosition(last_right_2);
-        // last_right_1.copy(document.querySelector('#glowstick-right-1').object3D.getWorldPosition(last_right_1));
-        // last_right_2.copy(document.querySelector('#glowstick-right-2').object3D.getWorldPosition(last_right_2));
-
       }
 
     }
 
     
-
-
-
   </script>
 
 
