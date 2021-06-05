@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>Tracked Controls</title>
+    <title>MAGIC HANDS</title>
     <meta name="description" content="Tracked Controls – A-Frame">
     <!-- <script src="../../../dist/aframe-master.js"></script> -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
@@ -78,10 +78,22 @@ var iFade = [];
 iFade[L] = 0;
 iFade[R] = 0;
 
-  
+
+var gRecordState =  "PLAYING"; //"RECORDING", "PLAYING", "NOTHING"
+const RECORD_MAX = 500;
+
 var aRecord = [];
 aRecord[L] = [];
 aRecord[R] = [];
+var iRecord = 0;
+
+// if (gRecordState === "PLAYING"){
+//   //LOAD FROM LOCAL STORAGE
+//   aRecord[L] = JSON.parse(localStorage.getItem('recording'));
+// }
+
+
+
 
 function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel){
 
@@ -678,9 +690,35 @@ AFRAME.registerComponent('button-listener-right', {
 
         }
 
-var gIsRecording = false;
+        
 
-    var myVar = setInterval(function(){
+        window.onload = function() {
+          
+          fetch("./recordings/left1.json")
+          .then(response => {
+            return response.json();
+          })
+          .then(data => {
+            console.log(data)
+          
+            if (gRecordState === "PLAYING"){
+              //LOAD FROM LOCAL STORAGE
+              // aRecord[L] = JSON.parse(localStorage.getItem('recording'));
+              aRecord[L] = data;
+            }
+
+            var myVar = setInterval(gameLoop, TICKS_PER_FRAME);
+          });
+        };
+
+
+
+
+
+
+
+
+    function gameLoop(){
       
       if (gBeatState=="BEATING"){
         getBeat(GermanFlag);
@@ -710,6 +748,30 @@ var gIsRecording = false;
       // var ground = document.querySelector('#ground'); 
       // ground.setAttribute('color', COLORS[gColorGroundIndex]);
        
+
+
+      if (gRecordState === "PLAYING"){
+        var handLeft = document.querySelector('#hand-left'); 
+
+        posLeft = aRecord[L][iRecord].posLeft;
+        rotLeft = aRecord[L][iRecord].rotLeft;
+
+        handLeft.setAttribute('position', posLeft)
+
+        var r = rotLeft;
+        var q = new THREE.Quaternion(r._x, r._y, r._z, r._w);
+        handLeft.object3D.setRotationFromQuaternion(q);
+
+        iRecord ++;
+        if (iRecord >= aRecord[L].length){
+          iRecord = 0;
+        }
+
+        gTriggerLeftDown = aRecord[L][iRecord].buttons.trigger_is_down;
+      }
+
+
+
       var tipLeft = document.querySelector('#glowstick-left-tip'); 
       tipLeft.setAttribute('material', 'color:' + COLORS[gColorLeftIndex])
       var tipRight = document.querySelector('#glowstick-right-tip'); 
@@ -728,6 +790,22 @@ var gIsRecording = false;
       var posLeft2 = new THREE.Vector3();
       const quaternionLeft = new THREE.Quaternion();
       var rotLeft = handLeft.object3D.getWorldQuaternion(quaternionLeft);
+      
+      // if (gRecordState === "PLAYING"){
+      //   posLeft = aRecord[L][iRecord].posLeft;
+      //   rotLeft = aRecord[L][iRecord].rotLeft;
+      //   //console.log("playback posL" + JSON.stringify(posLeft,null,2))
+      //   gTriggerLeftDown = aRecord[L][iRecord].buttons.trigger_is_down;
+      //   iRecord ++;
+      //   if (iRecord >= aRecord[L].length){
+      //     iRecord = 80;
+      //   }
+
+      //   gTriggerLeftDown = true;
+      // }
+      
+
+
 
       //RIGHT
       var handRight = document.querySelector('#hand-right'); 
@@ -739,12 +817,27 @@ var gIsRecording = false;
       velLeft = calcVelocity(aPosLeft, posLeft);
       velRight = calcVelocity(aPosRight, posRight);
 
-      if (gIsRecording){
-        var hand = {
-          "posLeft": posLeft,
-          "rotLeft": rotLeft
+      if (gRecordState === "RECORDING"){
+
+        if (aRecord[L].length < RECORD_MAX){
+
+          var hand = {
+            "posLeft": {...posLeft},
+            "rotLeft": {...rotLeft},
+            "buttons" : {
+              "trigger_is_down": gTriggerLeftDown
+            }
+          }
+
+          aRecord[L].push(hand);
         }
-        aRecording[L].push(hand);
+
+        if (aRecord[L].length === (RECORD_MAX-1)){
+          //console.log(JSON.stringify(aRecord[L],null,2));
+          console.log("RECORDING SAVED.")
+          localStorage.setItem('vr-recording', JSON.stringify(aRecord[L],null,2));
+        }
+
       }
 
 
@@ -762,7 +855,7 @@ var gIsRecording = false;
         if (!gLeftDrawing){
           gLeftDrawing = true;
           if (!gYButtonDown){
-            last_left_1.copy(posLeft);
+            last_left_1.copy(posLeft); //copy posLeft into last_left
             last_left_2.copy(posLeft2);
           }
         }
@@ -808,7 +901,7 @@ var gIsRecording = false;
 
       }
 
-    }, TICKS_PER_FRAME);
+    }
 
     
 
