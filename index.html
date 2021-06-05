@@ -7,6 +7,7 @@
     <!-- <script src="../../../dist/aframe-master.js"></script> -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
   
+    
     <!-- <script src="components/aabb-collider.js"></script> -->
     <!-- <script src="components/grab.js"></script> -->
     <!-- <script src="components/ground.js"></script>
@@ -58,6 +59,29 @@ var gLeftDrawing = false;
 var gGripLeftDown = false;
 var gGripRightDown = false;
 
+const L = 0;
+const R = 1;
+
+var aParts= [];
+aParts[L] = [];
+aParts[R] = [];
+
+var iPart = [];
+iPart[L] = 0;
+iPart[R] = 0;
+
+var aFades= [];
+aFades[L] = [];
+aFades[R] = [];
+
+var iFade = [];
+iFade[L] = 0;
+iFade[R] = 0;
+
+  
+var aRecord = [];
+aRecord[L] = [];
+aRecord[R] = [];
 
 function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel){
 
@@ -187,26 +211,7 @@ newEl2.setAttribute('animation__opacity', {
 
 }
 
-const L = 0;
-const R = 1;
-
-var aParts= [];
-aParts[L] = [];
-aParts[R] = [];
-
-var iPart = [];
-iPart[L] = 0;
-iPart[R] = 0;
-
-var aFades= [];
-aFades[L] = [];
-aFades[R] = [];
-
-var iFade = [];
-iFade[L] = 0;
-iFade[R] = 0;
-
-    
+  
 
     var last_left_1 = new THREE.Vector3();
     var last_left_2 = new THREE.Vector3();
@@ -673,6 +678,7 @@ AFRAME.registerComponent('button-listener-right', {
 
         }
 
+var gIsRecording = false;
 
     var myVar = setInterval(function(){
       
@@ -723,24 +729,6 @@ AFRAME.registerComponent('button-listener-right', {
       const quaternionLeft = new THREE.Quaternion();
       var rotLeft = handLeft.object3D.getWorldQuaternion(quaternionLeft);
 
-      // var barLeft = document.querySelector('#glowstick-left-bar'); 
-      // var tipLeftVert = new THREE.Vector3();
-      // var tipLeft = document.querySelector('#glowstick-left-tip');
-      
-
-      // tipLeftVert = tipLeft.object3D.getWorldPosition(tipLeftVert); 
-      // barLeft.setAttribute('geometry', {
-      //   primitive: 'triangle',
-      //   vertexA: posLeft,
-      //   vertexB: new THREE.Vector3(posLeft.x +0.005, posLeft.y + 0.005, posLeft.z + 0.005),
-      //   vertexC: tipLeftVert
-      // });
-      // barLeft.setAttribute('material', 'color:' + COLORS[gColorLeftIndex])
-
-
-      //barLeft.setAttribute('end', );
-
-
       //RIGHT
       var handRight = document.querySelector('#hand-right'); 
       var posRight = handRight.getAttribute('position');
@@ -751,7 +739,13 @@ AFRAME.registerComponent('button-listener-right', {
       velLeft = calcVelocity(aPosLeft, posLeft);
       velRight = calcVelocity(aPosRight, posRight);
 
-
+      if (gIsRecording){
+        var hand = {
+          "posLeft": posLeft,
+          "rotLeft": rotLeft
+        }
+        aRecording[L].push(hand);
+      }
 
 
       //LEFT
@@ -827,6 +821,8 @@ AFRAME.registerComponent('button-listener-right', {
   <body>
     <a-scene
     id="sky"
+    avatar-recorder avatar-replayer
+
       renderer="colorManagement: true;"
       cursor="rayOrigin: mouse"
       raycaster="objects: [cube]" fog="color: #bc483e; near: 0; far: 65;"
