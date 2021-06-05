@@ -55,6 +55,9 @@ var gGripDown = [false,false];
 var gAX_Down = [false,false];
 var gBY_Down = [false,false];
 
+var gThumbSpent = [false, false];
+
+
 var gIsMouseDown = false;
 
 
@@ -378,7 +381,11 @@ newEl2.setAttribute('animation__opacity', {
       }
     });
 
-    AFRAME.registerComponent('button-listener-left', {
+    AFRAME.registerComponent('button-listener', {
+
+      schema:{
+        hand: {type: 'string'}
+      },
 
       tick: function (){
         // var el = this.el;
@@ -396,175 +403,104 @@ newEl2.setAttribute('animation__opacity', {
 
       init: function () {
         var el = this.el;
+        var H;
+        var hand = this.data.hand;
+        if (this.data.hand==="left"){
+          H = 0;
+        }else{
+          H = 1;
+        }
 
         
-        // el.addEventListener('xbuttondown', function (evt) {
-        //   var newPos = el.object3D.getWorldPosition();
-        //   createTrail(newPos)
-        // });
+
         el.addEventListener('xbuttondown', function (evt) {
-          gAX_Down[L] = true;
-          
+          gAX_Down[H] = true;
         });
         el.addEventListener('xbuttonup', function (evt) {
-          gAX_Down[L] = false;
+          gAX_Down[H] = false;
         });
+        el.addEventListener('abuttondown', function (evt) {
+          gAX_Down[H] = true;
+        });
+        el.addEventListener('abuttonup', function (evt) {
+          gAX_Down[H] = false;
+        });
+
         el.addEventListener('ybuttondown', function (evt) {
-          gBY_Down[L] = true;
-          
-          // incrementColor(L, gColorIndex[L]);
+          gBY_Down[H] = true;
         });
         el.addEventListener('ybuttonup', function (evt) {
-          gBY_Down[L] = false;
+          gBY_Down[H] = false;
+        });
+        el.addEventListener('bbuttondown', function (evt) {
+          gBY_Down[H] = true;
+        });
+        el.addEventListener('bbuttonup', function (evt) {
+          gBY_Down[H] = false;
         });
 
         el.addEventListener('triggerdown', function (evt) {
-          gTriggerDown[L] = true;
+          gTriggerDown[H] = true;
+          console.log("trigger down:" + H)
         });        
         el.addEventListener('triggerup', function (evt) {
-          gTriggerDown[L] = false;
-          gDrawing[L] = false;
+          gTriggerDown[H] = false;
+          gDrawing[H] = false;
         });
 
         el.addEventListener('triggertouchstart', function (evt) {
-          gTriggerTouch[L] = true;
+          gTriggerTouch[H] = true;
         });        
         el.addEventListener('triggertouchend', function (evt) {
-          gTriggerTouch[L] = false;
+          gTriggerTouch[H] = false;
         });
 
-
         el.addEventListener('gripdown', function (evt) {
-          gGripDown[L] = true;
+          gGripDown[H] = true;
           setBeat();
         });        
         el.addEventListener('gripup', function (evt) {
-          gGripDown[L] = false;
+          gGripDown[H] = false;
         });
 
         el.addEventListener('thumbsticktouchstart', function (evt) {
-          var thumb = document.querySelector("#thumb-control-left");
+          var thumb = document.querySelector("#thumb-control-" + hand);
           //thumb.setAttribute("visible","true")
         });        
         el.addEventListener('thumbsticktouchend', function (evt) {
-          var thumb = document.querySelector("#thumb-control-left");
+          var thumb = document.querySelector("#thumb-control-" + hand);
           //thumb.setAttribute("visible","false")
         });
 
 
         el.addEventListener('thumbstickmoved', function (evt) {
           
-          if (!gLeftThumbSpent){
+          if (!gThumbSpent[H]){
             if (evt.detail.y > 0.65) { //DOWN
-              incrementSize(L, -1); 
-              gLeftThumbSpent = true;
+              incrementSize(H, -1); 
+              gThumbSpent[H] = true;
             }
             if (evt.detail.y < -0.65) {  //UP
-              incrementSize(L, 1); 
-              gLeftThumbSpent = true;
+              incrementSize(H, 1); 
+              gThumbSpent[H] = true;
             }
             if (evt.detail.x < -0.65) { //LEFT
-                incrementColor(L, gColorIndex[L], -1); 
-                gLeftThumbSpent = true;
+                incrementColor(H, gColorIndex[H], -1); 
+                gThumbSpent[H] = true;
             }
             if (evt.detail.x > 0.65) { //RIGHT
-                incrementColor(L, gColorIndex[L], 1); 
-                gLeftThumbSpent = true;
+                incrementColor(H, gColorIndex[H], 1); 
+                gThumbSpent[H] = true;
             }
           }//if
 
           if (Math.abs(evt.detail.x) < 0.4 && Math.abs(evt.detail.y) < 0.4){
-            gLeftThumbSpent = false;
+            gThumbSpent[H] = false;
           }
         });
 
       }
     });
-
-    var gLeftThumbSpent = false;
-    var gRightThumbSpent = false;
-
-AFRAME.registerComponent('button-listener-right', {
-
-    init: function () {
-      var el = this.el;
-
-      el.addEventListener('abuttondown', function (evt) {
-        gAX_Down[R] = true;
-        
-      });
-      el.addEventListener('abuttonup', function (evt) {
-        gAX_Down[R] = false;
-      });
-      el.addEventListener('bbuttondown', function (evt) {
-        gBY_Down[R] = true;
-        
-        // incrementColor(R, gColorIndex[R]);
-      });
-      el.addEventListener('bbuttonup', function (evt) {
-        gBY_Down[R] = false;
-      });
-
-      el.addEventListener('triggerdown', function (evt) {
-          gTriggerDown[R] = true;
-        });        
-        el.addEventListener('triggerup', function (evt) {
-          gTriggerDown[R] = false;
-          gDrawing[R] = false;
-        });
-
-
-        el.addEventListener('triggertouchstart', function (evt) {
-          gTriggerTouch[R] = true;
-        });        
-        el.addEventListener('triggertouchend', function (evt) {
-          gTriggerTouch[R] = false;
-        });
-
-        el.addEventListener('gripdown', function (evt) {
-          gGripDown[R] = true;
-          setBeat();
-        });        
-        el.addEventListener('gripup', function (evt) {
-          gGripDown[R] = false;
-        });
-
-        el.addEventListener('thumbsticktouchstart', function (evt) {
-          var thumb = document.querySelector("#thumb-control-right");
-          //thumb.setAttribute("visible","true")
-        });        
-        el.addEventListener('thumbsticktouchend', function (evt) {
-          var thumb = document.querySelector("#thumb-control-right");
-          //thumb.setAttribute("visible","false")
-        });
-
-        el.addEventListener('thumbstickmoved', function (evt) {
-          
-          if (!gRightThumbSpent){
-            if (evt.detail.y > 0.65) { //DOWN
-              incrementSize(R, -1); 
-              gRightThumbSpent = true;
-            }
-            if (evt.detail.y < -0.65) {  //UP
-              incrementSize(R, 1); 
-              gRightThumbSpent = true;
-            }
-            if (evt.detail.x < -0.65) { //LEFT
-                incrementColor(R, gColorIndex[R], -1); 
-                gRightThumbSpent = true;
-            }
-            if (evt.detail.x > 0.65) { //RIGHT
-                incrementColor(R, gColorIndex[R], 1); 
-                gRightThumbSpent = true;
-            }
-          }//if
-
-          if (Math.abs(evt.detail.x) < 0.4 && Math.abs(evt.detail.y) < 0.4){
-            gRightThumbSpent = false;
-          }
-        });
-    }
-});
 
 
 
@@ -764,11 +700,10 @@ AFRAME.registerComponent('button-listener-right', {
       var elHand = document.querySelector('#hand-' + handString); 
       var pos = elHand.getAttribute('position');
       var pos2 = new THREE.Vector3();
-      //const q = new THREE.Quaternion();
-      var rot = elHand.object3D.getWorldQuaternion(q);
+      var q2 = new THREE.Quaternion();
+      var rot = elHand.object3D.getWorldQuaternion(q2);
       
       gVel[H] = calcVelocity(aPos[H], pos);
-      //gVel[R] = calcVelocity(aPos[R], posRight);
 
       if (gRecordState === "RECORDING"){
 
@@ -837,16 +772,13 @@ AFRAME.registerComponent('button-listener-right', {
       
       <!-- Hands -->
 
-      <a-triangle id="glowstick-left-bar" visible="false"  vertex-a="1 1 1" vertex-b="1 2 1" vertex-c="1 1 -1" color="blue" material="side: double;"  ></a-triangle>
-
-
-      <a-entity  oculus-touch-controls="hand: left; model:true" id="hand-left" button-listener-left>
+      <a-entity  oculus-touch-controls="hand: left; model:true" id="hand-left" button-listener="hand:left;">
         <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
         <a-entity id="glowstick-left-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader: flat; color: green;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
         <a-entity id="thumb-control-left" position="0 0.05 -0.01" rotation="40 0 0" material="visible:false; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
       </a-entity>
 
-      <a-entity  oculus-touch-controls="hand: right; model:true" id="hand-right"  button-listener-right>
+      <a-entity  oculus-touch-controls="hand: right; model:true" id="hand-right"  button-listener="hand:right;">
         <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
         <a-entity id="glowstick-right-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader:flat; color: yellow;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
         <a-entity id="thumb-control-right" position="0 0.05 -0.01" rotation="40 0 0" material="visible:false; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
