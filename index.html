@@ -25,7 +25,7 @@ const VELOCITY_ON = false;
 
 const FADEOUT_MS = 100;
 
-const MAX_PARTICLES = 100;
+const MAX_PARTICLES = 20;
 const MAX_FADES = 10;
 const VEL_FACTOR = 10;
 
@@ -79,8 +79,8 @@ iFade[L] = 0;
 iFade[R] = 0;
 
 
-var gRecordState =  "NOTHING"; //"RECORDING", "PLAYING", "NOTHING"
-const RECORD_MAX = 500;
+var gRecordState =  "PLAYING"; //"RECORDING", "PLAYING", "NOTHING"
+const RECORD_MAX = 400;
 
 var aRecord = [];
 aRecord[L] = [];
@@ -411,6 +411,8 @@ newEl2.setAttribute('animation__opacity', {
           H = 1;
         }
 
+        this.recordEvent = this.recordEvent.bind(this);
+
         
 
         el.addEventListener('xbuttondown', function (evt) {
@@ -441,7 +443,7 @@ newEl2.setAttribute('animation__opacity', {
 
         el.addEventListener('triggerdown', function (evt) {
           gTriggerDown[H] = true;
-          console.log("trigger down:" + H)
+          //console.log("trigger down:" + H)
         });        
         el.addEventListener('triggerup', function (evt) {
           gTriggerDown[H] = false;
@@ -472,8 +474,12 @@ newEl2.setAttribute('animation__opacity', {
           //thumb.setAttribute("visible","false")
         });
 
+        el.addEventListener('thumbstickmoved', this.recordEvent);
+        el.addEventListener('buttondown', this.recordEvent);
+
 
         el.addEventListener('thumbstickmoved', function (evt) {
+          
           
           if (!gThumbSpent[H]){
             if (evt.detail.y > 0.65) { //DOWN
@@ -499,9 +505,78 @@ newEl2.setAttribute('animation__opacity', {
           }
         });
 
-      }
+      },
+
+
+      recordEvent: function (evt) {
+        var detail;
+
+        var H;
+        if (this.data.hand==="left"){
+          H = 0;
+        }else{
+          H = 1;
+        }
+
+        //debugger;
+
+        if (gRecordState != "RECORDING"){ return;}
+       // if (!this.isRecording) { return; }
+
+        // Filter out `target`, not serializable.
+        if ('detail' in evt && 'state' in evt.detail && typeof evt.detail.state === 'object' &&
+            'target' in evt.detail.state) {
+          delete evt.detail.state.target;
+        }
+
+        detail = {};
+        EVENTS[evt.type].props.forEach(function buildDetail (propName) {
+          // Convert GamepadButton to normal JS object.
+          if (propName === 'state') {
+            var stateProp;
+            detail.state = {};
+            for (stateProp in evt.detail.state) {
+              detail.state[stateProp] = evt.detail.state[stateProp];
+            }
+            return;
+          }
+          detail[propName] = evt.detail[propName];
+        });
+
+        gRecordedEvents[H].push({
+          name: evt.type,
+          detail: detail,
+          timestamp: this.lastTimestamp
+        });
+      },   
+
     });
 
+    var gRecordedEvents = [];
+    gRecordedEvents[L] = [];
+    gRecordedEvents[R] = [];
+
+    var EVENTS = {
+      axismove: {id: 0, props: ['id', 'axis', 'changed']},
+      buttonchanged: {id: 1, props: ['id', 'state']},
+      buttondown: {id: 2, props: ['id', 'state']},
+      buttonup: {id: 3, props: ['id', 'state']},
+      touchstart: {id: 4, props: ['id', 'state']},
+      touchend: {id: 5, props: ['id', 'state']},
+
+      thumbstickmoved: {id: 6, props: ['x', 'y']},
+    };
+
+    var EVENTS_DECODE = {
+      0: 'axismove',
+      1: 'buttonchanged',
+      2: 'buttondown',
+      3: 'buttonup',
+      4: 'touchstart',
+      5: 'touchend',
+
+      6: 'thumbstickmoved',
+    };
 
 
 
@@ -605,7 +680,7 @@ newEl2.setAttribute('animation__opacity', {
 
         window.onload = function() {
           
-          fetch("./recordings/left1.json")
+          fetch("./recordings/both1.json")
           .then(response => {
             return response.json();
           })
@@ -615,7 +690,7 @@ newEl2.setAttribute('animation__opacity', {
             if (gRecordState === "PLAYING"){
               //LOAD FROM LOCAL STORAGE
               // aRecord[L] = JSON.parse(localStorage.getItem('recording'));
-              aRecord[L] = data;
+              aRecord = data;
             }
 
             var myVar = setInterval(gameLoop, TICKS_PER_FRAME);
@@ -660,7 +735,7 @@ newEl2.setAttribute('animation__opacity', {
           if (aRecord[L].length === (RECORD_MAX-1)){
           //console.log(JSON.stringify(aRecord[L],null,2));
           console.log("RECORDING SAVED.")
-          localStorage.setItem('vr-recording', JSON.stringify(aRecord,null,2));
+          localStorage.setItem('vr-recording-2', JSON.stringify(aRecord,null,2));
         }
       }
     }
@@ -670,12 +745,29 @@ newEl2.setAttribute('animation__opacity', {
 
       var q;
 
+      var elHand = document.querySelector('#hand-' + handString); 
+
       if (gRecordState === "PLAYING"){
         
-        var elHand = document.querySelector('#hand-' + handString); 
 
-        pos = aRecord[L][iRecord].pos;
-        rot = aRecord[L][iRecord].rot;
+        //HANDLE EVENTS
+        if (aRecord[H][iRecord].events.length > 0){
+          var events = aRecord[H][iRecord].events;
+          for (var i=0; i<events.length; i++){
+            //this.el.emit(currentEvent.name, currentEvent.detail);
+            var event = events[i];
+            //debugger;
+            elHand.emit(event.name, event.detail);
+
+          }
+          
+
+        }
+        //HANDLE POSITION AND ROTATION
+        
+
+        pos = aRecord[H][iRecord].pos;
+        rot = aRecord[H][iRecord].rot;
 
         elHand.setAttribute('position', pos)
 
@@ -683,7 +775,8 @@ newEl2.setAttribute('animation__opacity', {
         q = new THREE.Quaternion(r._x, r._y, r._z, r._w);
         elHand.object3D.setRotationFromQuaternion(q);
 
-        gTriggerDown[H] = aRecord[H][iRecord].buttons.trigger_is_down;
+        gTriggerDown[H] = aRecord[H][iRecord].buttons.trigger_down;
+        //gTriggerTouch[H] = aRecord[H][iRecord].buttons.trigger_touch;
 
         iRecord ++;
         if (iRecord >= aRecord[H].length){
@@ -710,14 +803,29 @@ newEl2.setAttribute('animation__opacity', {
         if (aRecord[H].length < RECORD_MAX){
 
           var hand = {
+            "events" : JSON.parse(JSON.stringify(gRecordedEvents[H])),
             "pos": {...pos},
             "rot": {...rot},
             "buttons" : {
-              "trigger_is_down": gTriggerDown[H]
-            }
+              "trigger_down": gTriggerDown[H],
+              "trigger_touch": gTriggerTouch[H],
+              "grip_down": gGripDown[H],
+              "ax_down": gAX_Down[H],
+              "by_down": gBY_Down[H],
+            },
+            
           }
 
-          aRecord[H].push(hand);
+          //if (gRecordedEvents[H].length > 0){
+            //console.log(gRecordedEvents[H]);
+            //console.log(hand.events);
+            
+            aRecord[H].push(hand);
+          //}
+          
+          
+          gRecordedEvents[H] = [];
+
         }
       }
 
