@@ -16,20 +16,41 @@
     <script src="shaders/skyGradient.js"></script>
 
     <script src="https://unpkg.com/aframe-event-set-component@4.0.1/dist/aframe-event-set-component.min.js"></script>
-  
+
+    <script src="https://cdn.jsdelivr.net/npm/aframe-look-at-component@1.0.0/index.min.js"></script>
+
   <script>
 
 
 // GAME LOOP
 const TICKS_PER_FRAME = 20;
 
+const IS_BENDING = true;
 const VELOCITY_ON = false;
 
-const FADEOUT_MS = 100;
+var ANIM_DELAY_MS = 1000;
+var FADEOUT_MS = 100;
 
-const MAX_PARTICLES = 20;
-const MAX_FADES = 10;
-const VEL_FACTOR = 10;
+var MAX_PARTICLES = 20;
+var MAX_FADES = 10;
+var VEL_FACTOR = 10;
+
+if (IS_BENDING){
+  ANIM_DELAY_MS = 1000;
+  FADEOUT_MS = 1000;
+  MAX_PARTICLES = 80;
+  VEL_FACTOR = 0.5;
+}
+
+//THROWINGG.
+const THROW_ACCEL_FACTOR = 0.05;
+const MAX_THROW_VELOCITY = 0.07; //how fast it can go.
+const THROW_VEL_THRESHOLD = 0.1; //throw this hard to get it to go.
+
+const COLOR_LEFT = "#0000cc"
+const COLOR_RIGHT = "#006699"
+
+
 
 const GREY = 0;
 const WHITE = 1;
@@ -40,6 +61,8 @@ const BLUE = 5;
 const RED = 6; 
 const COLORS = ["grey","white","black","yellow","green","blue","red"];//,"pink"
 const SIZES = [0.001, 0.005, 0.02, 0.05, 0.1, 0.2] //these get trippled.
+
+const COLORS_BENDING = ["#0000cc","#006699"] 
 
 const L = 0; //LEFT
 const R = 1; //RIGHT
@@ -62,6 +85,29 @@ var gThumbSpent = [false, false];
 
 var gIsMouseDown = false;
 
+//THROWING
+var gThrowing = [false, false]
+
+var gThrowingVel = [new THREE.Vector3(), new THREE.Vector3()]
+
+var gThrowingPos = [new THREE.Vector3(), new THREE.Vector3()]
+
+var gThrownPos = [new THREE.Vector3(), new THREE.Vector3()]
+
+
+function throwElement(H){
+  console.log("throwElement: " + hand)
+
+  var hand = (H==0)? "left": "right";
+
+    if (!gThrowing[H]){
+      gThrowingVel[H] = gVel[H];
+      gThrowingPos[H] = document.querySelector('#hand-' + hand).getAttribute('position');
+      gThrownPos[H].copy(gThrowingPos[H])
+      gThrowing[H] = true;
+    }
+}
+
 
 //DRAWING PARTS OF LINE.
 var aParts= [];
@@ -81,7 +127,7 @@ iFade[L] = 0;
 iFade[R] = 0;
 
 
-var gRecordState =  "PLAYING"; //"RECORDING", "PLAYING", "NOTHING"
+var gRecordState =  "NOTHING"; //"RECORDING", "PLAYING", "NOTHING"
 const RECORD_MAX = 400;
 
 var aRecord = [];
@@ -222,6 +268,22 @@ window.onload = function() {
       
       gVel[H] = calcVelocity(aPos[H], pos);
 
+      if (gVel[H].length > THROW_VEL_THRESHOLD){
+        throwElement(H)
+      }
+
+      if (gThrowing[H]){     
+        //adjust valocity
+        var gThrowingAccel = new THREE.Vector3().subVectors(pos, gThrownPos[H]).multiplyScalar(THROW_ACCEL_FACTOR)
+        gThrowingVel[H] = new THREE.Vector3().addVectors(gThrowingAccel, gThrowingVel[H]).clampLength(0,MAX_THROW_VELOCITY)
+        
+        //adjust position
+        gThrowingPos[H] = new THREE.Vector3().addVectors(gThrowingVel[H], gThrowingPos[H])
+        pos = gThrowingPos[H].clone();
+        //console.log("throwingLeft pos:" +  posLeft.length());
+      }
+
+
       if (gRecordState === "RECORDING"){
 
         if (aRecord[H].length < RECORD_MAX){
@@ -244,6 +306,12 @@ window.onload = function() {
       }
 
 
+//GTHROWING
+
+
+
+
+
       if (gTriggerDown[H] || gTriggerTouch[H]){ 
 
         gLastPos1[H] = document.querySelector('#glowstick-' + handString + '-1').object3D.getWorldPosition(gLastPos1[H]);
@@ -254,6 +322,7 @@ window.onload = function() {
         elGlowStick.object3D.setRotationFromQuaternion(rot)
         pos2 = document.querySelector('#glowstick-' + handString + '-2').object3D.getWorldPosition(pos2);
 
+
         if (!gDrawing[H]){
           gDrawing[H] = true;
           if (!gBY_Down[H]){
@@ -263,9 +332,25 @@ window.onload = function() {
         }
 
         if (gTriggerDown[H]){
-          createTrailGlowstick(pos, pos2, COLORS[gColorIndex[H]], gLastPos1[H], gLastPos2[H], H, gVel[H])
+          if (IS_BENDING){
+
+            var ball = document.querySelector('#sphere-' + handString);
+            ball.setAttribute("position",pos)
+
+            var distance = gLastPos1[L].distanceTo(pos)
+            if (distance > 0.01){
+              document.querySelector('#glowstick-'+ handString + '-1').object3D.getWorldPosition(gLastPos1[L]);
+            }
+
+            createTrailBending(pos, COLORS_BENDING[H], gLastPos1[H], H, gVel[H])
+          }else{
+            createTrailGlowstick(pos, pos2, COLORS[gColorIndex[H]], gLastPos1[H], gLastPos2[H], H, gVel[H])
+          }
+          
         }else if (gTriggerTouch[H]){
-          createFadeGlowstick(pos, pos2, COLORS[gColorIndex[H]], gLastPos1[H], gLastPos2[H], H, gVel[H])
+          if (!IS_BENDING){
+            createFadeGlowstick(pos, pos2, COLORS[gColorIndex[H]], gLastPos1[H], gLastPos2[H], H, gVel[H])
+          }
         }
       }
     }
@@ -331,6 +416,78 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
     if (iPart[hand] > MAX_PARTICLES){
       iPart[hand] = 0;
     } 
+
+}
+
+
+
+function createTrailBending(newPos, color, lastPos, hand, newVel){
+
+  var sceneEl = document.querySelector('a-scene');
+
+  var groupEl = document.createElement('a-entity');
+  sceneEl.appendChild(groupEl);
+
+  var newEl1 = document.createElement('a-cone');
+
+  var distance = lastPos.distanceTo(newPos)
+  var height = distance * 2;
+  //ghetto way to trim the long connectors when mouse position moves.
+  if (height > 0.3){
+    height = 0;
+  }
+
+  groupEl.appendChild(newEl1);
+  newEl1.setAttribute('color', color);
+  newEl1.setAttribute('material','side: double; transparent: false;')
+  newEl1.setAttribute('geometry', {
+    primitive: 'cone',
+    radiusTop: 0.1,
+    radiusBottom: 0.1,
+    height: height,
+    segmentsRadial: 9,
+    segmentsHeight: 3,
+    openEnded: false,
+  });
+  groupEl.setAttribute('position', newPos);
+  newEl1.setAttribute('rotation', '90 0 0');
+
+  
+  groupEl.setAttribute("look-at",  lastPos);
+
+  // console.log("newPos:" + JSON.stringify(newPos))
+  // console.log("lastPos:" + JSON.stringify(lastPos))
+
+
+
+
+  newEl1.setAttribute('animation__radius_shrink', {
+    property: 'geometry.radiusTop',
+    dur: FADEOUT_MS,
+    delay: ANIM_DELAY_MS,
+    easing: 'easeOutQuad',
+    to: 0
+  })
+
+  newEl1.setAttribute('animation__radius2_shrink', {
+    property: 'geometry.radiusBottom',
+    dur: FADEOUT_MS,
+    delay: ANIM_DELAY_MS,
+    easing: 'easeOutQuad',
+    to: 0
+  })
+
+  //Destroy old one and register new one
+  if (aParts[hand][iPart[hand]]){
+    var el = aParts[hand][iPart[hand]];
+    el.parentNode.removeChild(el);
+  }
+
+  aParts[hand][iPart[hand]] = groupEl;
+  iPart[hand] ++;
+  if (iPart[hand] > MAX_PARTICLES){
+    iPart[hand] = 0;
+  } 
 
 }
 
@@ -590,10 +747,13 @@ init: function () {
 
   el.addEventListener('gripdown', function (evt) {
     gGripDown[H] = true;
+    gThrowing[H] = true;
+    throwElement(H);
     setBeat();
   });        
   el.addEventListener('gripup', function (evt) {
     gGripDown[H] = false;
+    gThrowing[H] = false;
   });
 
   el.addEventListener('thumbsticktouchstart', function (evt) {
@@ -848,6 +1008,9 @@ function GermanFlagFast(beat){
       <a-entity id="glowstick-right-1" position="0 0 0" material="visible:false; color: purple;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
       <a-entity id="glowstick-right-2" position="0 0.15 -0.1" rotation="0 0 0" material="visible:false; color: white;" geometry="primitive: box; height: 0.001; width: 0.001; depth: 0.001"></a-entity>
     </a-entity>
+
+    <a-sphere id="sphere-left" color="#0000cc" materialX="shader:flat;" radius="0.1" geometry="segmentsHeight:9; segmentsWidth:9;" position="-0.2 0.15 -0.1" ></a-sphere>
+    <a-sphere id="sphere-right" color="#006699"  materialX="shader:flat;" radius="0.1" geometry="segmentsHeight:9; segmentsWidth:9;"  position="0.2 0.15 -0.1" ></a-sphere>
 
 
 

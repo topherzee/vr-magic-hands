@@ -23,6 +23,15 @@ http-server -S -C cert.pem
 Working on steering water once it is launched.
 
 ## TODO
+
+Refacgtoring- 
+Left ball - thickness is messed uip.
+Cannot throw as normal.
+Hide the tips - make them invisible in BENDING MODE.
+
+Add an indication of where the control point is.
+
+Make water go boom.
 Sommon the water back.
 Start with a small water - energize it by spinning it.
 Add texture /shader to water surface.
