@@ -1,0 +1,36 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta http-equiv="origin-trial" data-feature="WebVR (For Chrome M59+)" data-expires="2017-07-28" content="ArFv1ZeTwzkhjNE00uAE+XtiQB41fwqG/TqlFMLrepd9sforQSvQE/tgfIbUMYNuNre4QR1k4/z8xp2mV3dbhwwAAABeeyJvcmlnaW4iOiJodHRwczovL2FmcmFtZS5pbzo0NDMiLCJmZWF0dXJlIjoiV2ViVlIxLjEiLCJleHBpcnkiOjE1MDEyMTcwMDIsImlzU3ViZG9tYWluIjp0cnVlfQ==">
+<meta charset="utf-8">
+<title>glTF Model</title>
+<meta name="description" content="glTF Model - A-Frame">
+
+<script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+<script src="shaders/skyGradient.js"></script>
+
+</head>
+<body>
+    <a-scene >
+        <!-- <a-scene stats> -->
+<a-assets>
+<a-asset-item id="cityModel" src="models/easter_island_low_poly/scene.gltf"></a-asset-item>
+</a-assets>
+
+<a-entity gltf-model="#cityModel" position="3 -6 -20" play-all-model-animations></a-entity>
+
+<a-entity light="type: point; color: #f4f4f4; intensity: 0.1; distance: 0" position="-2.5 1.2 2.2"></a-entity>
+<a-entity light="type: point; color: #f4f4f4; intensity: 0.1; distance: 0" position="-20 -7 -40"></a-entity>
+<a-entity light="type: ambient; color: #f4f4f4; intensity: 0.25;" position="-8 10 -18"></a-entity>
+</a-entity>
+
+<a-entity id="sky" 
+geometry="primitive: sphere; radius: 65;"
+material="shader: skyGradient; colorTop: #353449; colorBottom: #BC483E; side: back"></a-entity>
+
+
+</a-scene>
+</body>
+</html>

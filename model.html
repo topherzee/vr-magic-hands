@@ -1,0 +1,24 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+
+<meta http-equiv="origin-trial" data-feature="WebVR (For Chrome M59+)" data-expires="2017-07-28" content="ArFv1ZeTwzkhjNE00uAE+XtiQB41fwqG/TqlFMLrepd9sforQSvQE/tgfIbUMYNuNre4QR1k4/z8xp2mV3dbhwwAAABeeyJvcmlnaW4iOiJodHRwczovL2FmcmFtZS5pbzo0NDMiLCJmZWF0dXJlIjoiV2ViVlIxLjEiLCJleHBpcnkiOjE1MDEyMTcwMDIsImlzU3ViZG9tYWluIjp0cnVlfQ==">
+<meta charset="utf-8">
+<title>glTF Model</title>
+<meta name="description" content="glTF Model - A-Frame">
+
+<script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+
+</head>
+<body>
+<a-scene stats>
+<a-assets>
+<a-asset-item id="cityModel" src="models/low_poly_nature/scene.gltf"></a-asset-item>
+</a-assets>
+
+<a-entity gltf-model="#cityModel" position="0 -23 0" play-all-model-animations></a-entity>
+
+</a-scene>
+</body>
+</html>
