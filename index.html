@@ -130,7 +130,7 @@ iFade[L] = 0;
 iFade[R] = 0;
 
 
-var gRecordState =  "PLAYING"; //"RECORDING", "PLAYING", "NOTHING"
+var gRecordState =  "NOTHING"; //"RECORDING", "PLAYING", "NOTHING"
 const RECORD_MAX = 400;
 
 var aRecord = [];
@@ -268,15 +268,16 @@ window.onload = function() {
 
       //Controllers'
 
-      var elHand = document.querySelector('#hand-' + handString); 
       var pos = elHand.getAttribute('position');
       var pos2 = new THREE.Vector3();
       var q2 = new THREE.Quaternion();
       var rot = elHand.object3D.getWorldQuaternion(q2);
       
-      gVel[H] = calcVelocity(aPos[H], pos);
 
-      if (gVel[H].length > THROW_VEL_THRESHOLD){
+      gVel[H] = calcVelocity(aPos[H], pos);
+      console.log("vel:" +  gVel[H].length());
+
+      if (gVel[H].length() > THROW_VEL_THRESHOLD){
         throwElement(H)
       }
 
@@ -316,7 +317,22 @@ window.onload = function() {
 
 //GTHROWING
 
+      if (IS_BENDING){
+        if (gTriggerDown[H]){
+          var ball = document.querySelector('#sphere-' + handString);
+          gLastPos1[H] = ball.object3D.getWorldPosition(gLastPos1[H])
 
+          ball.setAttribute("position",pos)
+
+          var distance = gLastPos1[H].distanceTo(pos)
+          //What was this for - if it is here then the look-at in the rendering gets messed up.
+          //if (distance > 0.01){
+          //gLastPos1[H] = document.querySelector('#glowstick-'+ handString + '-1').object3D.getWorldPosition(gLastPos1[H]);
+          //}
+
+          createTrailBending(pos, COLORS_BENDING[H], gLastPos1[H], H, gVel[H])
+        }
+      }else{
 
 
 
@@ -340,28 +356,12 @@ window.onload = function() {
         }
 
         if (gTriggerDown[H]){
-          if (IS_BENDING){
-
-            var ball = document.querySelector('#sphere-' + handString);
-            ball.setAttribute("position",pos)
-
-            var distance = gLastPos1[H].distanceTo(pos)
-            //What was this for - if it is here then the look-at in the rendering gets messed up.
-            //if (distance > 0.01){
-            //gLastPos1[H] = document.querySelector('#glowstick-'+ handString + '-1').object3D.getWorldPosition(gLastPos1[H]);
-            //}
-
-            createTrailBending(pos, COLORS_BENDING[H], gLastPos1[H], H, gVel[H])
-          }else{
             createTrailGlowstick(pos, pos2, COLORS[gColorIndex[H]], gLastPos1[H], gLastPos2[H], H, gVel[H])
-          }
-          
         }else if (gTriggerTouch[H]){
-          if (!IS_BENDING){
-            createFadeGlowstick(pos, pos2, COLORS[gColorIndex[H]], gLastPos1[H], gLastPos2[H], H, gVel[H])
-          }
+          createFadeGlowstick(pos, pos2, COLORS[gColorIndex[H]], gLastPos1[H], gLastPos2[H], H, gVel[H])
         }
       }
+    }//NOT BENDING.
     }
 
 
@@ -464,8 +464,8 @@ function createTrailBending(newPos, color, lastPos, hand, newVel){
   
   groupEl.setAttribute("look-at",  lastPos);
 
-  // console.log("newPos:" + JSON.stringify(newPos))
-  // console.log("lastPos:" + JSON.stringify(lastPos))
+// console.log("newPos:" + JSON.stringify(newPos))
+// console.log("lastPos:" + JSON.stringify(lastPos))
 
 
 
@@ -567,21 +567,22 @@ function createFadeGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, n
 
 function calcVelocity(aPos, pos){
 
-  aPos.push(pos);
+  aPos.push(pos.clone());
   if (aPos.length > MAX_POS){
     aPos.shift();
   }
 
   //Track velocities
-  var vel = {"x":0,"y":0,"z":0}
-
+  //var vel = {"x":0,"y":0,"z":0}
+  
   //console.log("aPos.length:" + aPos.length);
   //if (aPos.length >= MAX_POS){
     var x = (pos.x - aPos[0].x) * VEL_FACTOR;
     var y = (pos.y - aPos[0].y) * VEL_FACTOR;
     var z = (pos.z - aPos[0].z) * VEL_FACTOR;
-    vel = {"x":x, "y":y, "z":z}
-    //console.log("vvv x:" + x);
+    
+    var vel = new THREE.Vector3(x, y, z);
+    console.log("vvv pos:" + pos.x);
   //}
   
   return vel;
