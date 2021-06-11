@@ -15,6 +15,9 @@
     <script src="components/ground.js"></script>
     <script src="shaders/skyGradient.js"></script>
 
+    <script src="shaders/displacement-offset-shader.js"></script>
+
+
     <script src="https://unpkg.com/aframe-event-set-component@4.0.1/dist/aframe-event-set-component.min.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/aframe-look-at-component@1.0.0/index.min.js"></script>
@@ -127,7 +130,7 @@ iFade[L] = 0;
 iFade[R] = 0;
 
 
-var gRecordState =  "NOTHING"; //"RECORDING", "PLAYING", "NOTHING"
+var gRecordState =  "PLAYING"; //"RECORDING", "PLAYING", "NOTHING"
 const RECORD_MAX = 400;
 
 var aRecord = [];
@@ -162,6 +165,11 @@ gLastPos2[R] = new THREE.Vector3();
 window.onload = function() {
   
   console.log("STARTUP!")
+
+  if (IS_BENDING){
+    document.querySelector("#glowstick-left-tip").setAttribute("material","visible:false;");
+    document.querySelector("#glowstick-right-tip").setAttribute("material","visible:false;");
+  }
 
   fetch("./recordings/glowsticks-1.json")
   .then(response => {
@@ -337,10 +345,11 @@ window.onload = function() {
             var ball = document.querySelector('#sphere-' + handString);
             ball.setAttribute("position",pos)
 
-            var distance = gLastPos1[L].distanceTo(pos)
-            if (distance > 0.01){
-              document.querySelector('#glowstick-'+ handString + '-1').object3D.getWorldPosition(gLastPos1[L]);
-            }
+            var distance = gLastPos1[H].distanceTo(pos)
+            //What was this for - if it is here then the look-at in the rendering gets messed up.
+            //if (distance > 0.01){
+            //gLastPos1[H] = document.querySelector('#glowstick-'+ handString + '-1').object3D.getWorldPosition(gLastPos1[H]);
+            //}
 
             createTrailBending(pos, COLORS_BENDING[H], gLastPos1[H], H, gVel[H])
           }else{
@@ -1054,6 +1063,16 @@ function GermanFlagFast(beat){
         material="color: black; shader: flat; visible:false;">
       </a-entity>
     </a-entity>
+<!-- 
+    <a-sphere material="shader:displacement-offset; metalness:1.0"
+                
+                scale="1 1 1"
+                radius="0.5"
+                position="0 1.5 -2"
+                segments-height="128"
+                segments-width="128">
+        <a-animation attribute="scale" direction="alternate-reverse" dur="5000" from="1 1 1" to="4 4 4" repeat="indefinite"></a-animation>
+      </a-sphere> -->
 
   </a-scene>
 </body>
