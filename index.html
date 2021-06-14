@@ -97,6 +97,19 @@ var gThrowingPos = [new THREE.Vector3(), new THREE.Vector3()]
 
 var gThrownPos = [new THREE.Vector3(), new THREE.Vector3()]
 
+//COLLECTING
+var gCollectState = ["OFF", "OFF"] //'OFF', "SUMMON" "COLLECT"
+const SUMMON_THRESHOLD_METERS = 0.4;
+const COLLECT_THRESHOLD_METERS = 1.5;
+
+var gCollectEnergy = [0,0];
+var gSummonEnergy = [0,0];
+const SUMMON_RATE = 0.005;
+const COLLECT_RATE = 0.005;
+
+const MAX_BALL_SIZE = 0.1;
+const MIN_BALL_SIZE = 0.02;
+
 
 function throwElement(H){
   console.log("throwElement: " + hand)
@@ -108,9 +121,13 @@ function throwElement(H){
       gThrowingPos[H] = document.querySelector('#hand-' + hand).getAttribute('position');
       gThrownPos[H].copy(gThrowingPos[H])
       gThrowing[H] = true;
+
+      document.querySelector('#throw-base-' + hand).setAttribute("position", gThrowingPos[H])
+      document.querySelector('#throw-base-' + hand).setAttribute("material", "visible:true;")
     }
 }
 
+var aHands = ["left", "right"];
 
 //DRAWING PARTS OF LINE.
 var aParts= [];
@@ -131,6 +148,11 @@ iFade[R] = 0;
 
 
 var gRecordState =  "NOTHING"; //"RECORDING", "PLAYING", "NOTHING"
+
+const params = new URLSearchParams(window.location.search)
+if (params.has('playing')){
+  gRecordState = "PLAYING"
+}
 const RECORD_MAX = 400;
 
 var aRecord = [];
@@ -164,11 +186,22 @@ gLastPos2[R] = new THREE.Vector3();
 
 window.onload = function() {
   
+  
+  start();
+
+};
+
+function start(){
+
   console.log("STARTUP!")
 
   if (IS_BENDING){
     document.querySelector("#glowstick-left-tip").setAttribute("material","visible:false;");
     document.querySelector("#glowstick-right-tip").setAttribute("material","visible:false;");
+  
+    document.querySelector("#sphere-left").setAttribute("radius",MIN_BALL_SIZE);
+    document.querySelector("#sphere-right").setAttribute("radius",MIN_BALL_SIZE);
+  
   }
 
   fetch("./recordings/glowsticks-1.json")
@@ -185,7 +218,7 @@ window.onload = function() {
 
     var myVar = setInterval(gameLoop, TICKS_PER_FRAME);
   });
-};
+}
 
 
 
@@ -274,11 +307,18 @@ window.onload = function() {
       var rot = elHand.object3D.getWorldQuaternion(q2);
       
 
+      // COLLECGTING
+      if (true){
+        waterCollecting(H, handString, pos)
+      }
+    
+
+      // GTHROW DETECTION AND HANDLING
       gVel[H] = calcVelocity(aPos[H], pos);
-      console.log("vel:" +  gVel[H].length());
+      //console.log("vel:" +  gVel[H].length());
 
       if (gVel[H].length() > THROW_VEL_THRESHOLD){
-        throwElement(H)
+        //throwElement(H)
       }
 
       if (gThrowing[H]){     
@@ -319,19 +359,16 @@ window.onload = function() {
 
       if (IS_BENDING){
         if (gTriggerDown[H]){
-          var ball = document.querySelector('#sphere-' + handString);
+        }
+
+        var ball = document.querySelector('#sphere-' + handString);
           gLastPos1[H] = ball.object3D.getWorldPosition(gLastPos1[H])
 
           ball.setAttribute("position",pos)
 
           var distance = gLastPos1[H].distanceTo(pos)
-          //What was this for - if it is here then the look-at in the rendering gets messed up.
-          //if (distance > 0.01){
-          //gLastPos1[H] = document.querySelector('#glowstick-'+ handString + '-1').object3D.getWorldPosition(gLastPos1[H]);
-          //}
+          //createTrailBending(pos, COLORS_BENDING[H], gLastPos1[H], H, gVel[H])
 
-          createTrailBending(pos, COLORS_BENDING[H], gLastPos1[H], H, gVel[H])
-        }
       }else{
 
 
@@ -363,7 +400,6 @@ window.onload = function() {
       }
     }//NOT BENDING.
     }
-
 
 function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel){
 
@@ -430,7 +466,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
 
 
 
-function createTrailBending(newPos, color, lastPos, hand, newVel){
+function createTrailBending(newPos, color, lastPos, H, newVel){
 
   var sceneEl = document.querySelector('a-scene');
 
@@ -446,13 +482,16 @@ function createTrailBending(newPos, color, lastPos, hand, newVel){
     height = 0;
   }
 
+  var ball = document.querySelector("#sphere-" + aHands[H]);
+  var streamSize = ball.getAttribute("radius") * 0.8;
+
   groupEl.appendChild(newEl1);
   newEl1.setAttribute('color', color);
   newEl1.setAttribute('material','side: double; transparent: false;')
   newEl1.setAttribute('geometry', {
     primitive: 'cone',
-    radiusTop: 0.1,
-    radiusBottom: 0.1,
+    radiusTop: streamSize,
+    radiusBottom: streamSize,
     height: height,
     segmentsRadial: 9,
     segmentsHeight: 3,
@@ -487,19 +526,132 @@ function createTrailBending(newPos, color, lastPos, hand, newVel){
   })
 
   //Destroy old one and register new one
-  if (aParts[hand][iPart[hand]]){
-    var el = aParts[hand][iPart[hand]];
+  if (aParts[H][iPart[H]]){
+    var el = aParts[H][iPart[H]];
     el.parentNode.removeChild(el);
   }
 
-  aParts[hand][iPart[hand]] = groupEl;
-  iPart[hand] ++;
-  if (iPart[hand] > MAX_PARTICLES){
-    iPart[hand] = 0;
+  aParts[H][iPart[H]] = groupEl;
+  iPart[H] ++;
+  if (iPart[H] > MAX_PARTICLES){
+    iPart[H] = 0;
   } 
 
 }
 
+function waterCollecting(H, handString, pos){
+  var elCollectGeom = document.querySelector('#collector-'+ handString+ '-geom');
+  var elCollect = document.querySelector("#collector-" + handString);
+  var ball = document.querySelector("#sphere-" + handString);
+
+  var maxStreamSize = MAX_BALL_SIZE * 1.0;
+
+  if (gCollectState[H]==="OFF"){
+
+    if (pos.y < SUMMON_THRESHOLD_METERS){
+      console.log("Start Summon. " + H + " pos.x:" + pos.x)
+      
+      gCollectState[H]="SUMMON"
+      gSummonEnergy[H]=0 ;
+
+      elCollectGeom.setAttribute('geometry', {
+        radiusTop: 0,
+        radiusBottom: maxStreamSize,
+      });
+
+    }
+
+  }else if (gCollectState[H]==="SUMMON"){
+
+    elCollect.setAttribute("look-at",  "#sphere-" + handString);
+
+    //Animate rodes comeing to the balls
+    doCollectLength(H);
+
+    if (gSummonEnergy[H] < 1){
+      gSummonEnergy[H] += SUMMON_RATE;
+    }
+
+    if (gSummonEnergy[H] >= 1){
+      if (pos.y > COLLECT_THRESHOLD_METERS){
+        console.log("Start Collect. " + H + " pos.x:" + pos.x)
+        elCollectGeom.setAttribute("color","#ccc")
+        gCollectState[H]="COLLECT"
+      }
+    }
+
+
+  }else if (gCollectState[H]==="COLLECT"){
+    
+    var ballSize = Math.max(MIN_BALL_SIZE, MAX_BALL_SIZE * gCollectEnergy[H]/2)
+    ball.setAttribute('radius', ballSize);
+
+    //Animate rodes comeing to the balls
+    doCollectLength(H);
+    
+    //animate the look of collector
+    elCollectGeom.setAttribute('geometry', {
+        radiusTop: ballSize * gCollectEnergy[H],
+        radiusBottom: maxStreamSize * (1-gCollectEnergy[H]),
+      });
+
+    if (gCollectEnergy[H] < 1){
+      gCollectEnergy[H] += COLLECT_RATE;
+
+      if (gCollectEnergy[H] >= 1){
+        gCollectState[H]="COLLECT_END";
+      }
+    }
+
+  }else if (gCollectState[H]==="COLLECT_END"){
+
+      var ballSize = MAX_BALL_SIZE * (0.5 + (1-gSummonEnergy[H])/2)
+      ball.setAttribute('radius', ballSize);
+
+      //animate the look of collector
+      elCollectGeom.setAttribute('geometry', {
+        radiusTop: ballSize ,
+      });
+
+      //Animate rodes comeing to the balls
+      doCollectLength(H, true);
+
+      if (gSummonEnergy[H] > 0){
+        gSummonEnergy[H] -= (SUMMON_RATE*2);
+      }
+  }
+}
+
+function doCollectLength(H, bShrink){
+  var elCollect = document.querySelector("#collector-" + aHands[H]);
+  var elCollectGeom = document.querySelector('#collector-'+ aHands[H]+ '-geom');
+  var ball = document.querySelector("#sphere-" + aHands[H]);
+  var distance = elCollect.getAttribute("position").distanceTo(ball.getAttribute("position"))
+      // if (H===L){
+      //   console.log("distance:" + distance)
+      // }
+
+      //TODO HANLDE SHRINKING - new energy - or reuse summon energyh??
+      if (bShrink){
+        var length = distance * gSummonEnergy[H];
+        elCollectGeom.setAttribute('geometry', {
+            height: (length * 1.0),
+          });
+      
+       
+       //elCollectGeom.setAttribute('position','0 0 ' + length/2 + gSummonEnergy[H]length/2)
+        elCollectGeom.setAttribute('position','0 0 ' + ( distance - length/2))
+
+      }else{
+        var length = distance * gSummonEnergy[H];
+        elCollectGeom.setAttribute('geometry', {
+            height: (length * 1.0),
+          });
+
+        elCollectGeom.setAttribute('position','0 0 ' + length/2)
+      }
+
+}
 
 
 function createFadeGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, newVel){
@@ -582,7 +734,7 @@ function calcVelocity(aPos, pos){
     var z = (pos.z - aPos[0].z) * VEL_FACTOR;
     
     var vel = new THREE.Vector3(x, y, z);
-    console.log("vvv pos:" + pos.x);
+    //console.log("vvv pos:" + pos.x);
   //}
   
   return vel;
@@ -1022,8 +1174,16 @@ function GermanFlagFast(beat){
     <a-sphere id="sphere-left" color="#0000cc" materialX="shader:flat;" radius="0.1" geometry="segmentsHeight:9; segmentsWidth:9;" position="-0.2 0.15 -0.1" ></a-sphere>
     <a-sphere id="sphere-right" color="#006699"  materialX="shader:flat;" radius="0.1" geometry="segmentsHeight:9; segmentsWidth:9;"  position="0.2 0.15 -0.1" ></a-sphere>
 
+    <a-torus-knot id="throw-base-left" color="#cccccc" material="shader:flat; visible:false;" p="2" q="3" radius=".02" radius-tubular="0.002"  animation="property: rotation; to: 90 360 0; loop: true; dur: 2000; easing: linear;" position="-0.2 0.8 -0.1" rotation="90 0 0"></a-torus-knot>
+    <a-torus-knot id="throw-base-right" color="#cccccc" material="shader:flat; visible:false;" p="2" q="3" radius=".02" radius-tubular="0.002"  animation="property: rotation; to: 90 360 0; loop: true; dur: 2000; easing: linear;" position="0.2 0.8 -0.1"  rotation="90 0 0"></a-torus-knot>
+    
+    <a-entity id="collector-left" position="-0.2 0.15 -1">
+    <a-cone id="collector-left-geom" rotation="90 0 0" color="#000099" geometry="radiusBottom:0.2;" material="shader:flat;" ></a-cone>
+  </a-entity>
 
-
+  <a-entity id="collector-right" position="0.2 0.15 -1">
+    <a-cone id="collector-right-geom"  rotation="90 0 0" color="#003366" geometry="radiusBottom:0.2;" material="shader:flat;" ></a-cone>
+  </a-entity>
 
 
 
