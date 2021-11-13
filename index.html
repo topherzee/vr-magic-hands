@@ -31,6 +31,7 @@ const MAX_PARTICLES = 20;
 const MAX_FADES = 10;
 const VEL_FACTOR = 10;
 
+const ENABLE_BEATS = false;
 const GREY = 0;
 const WHITE = 1;
 const BLACK = 2;
@@ -44,7 +45,8 @@ const SIZES = [0.001, 0.005, 0.02, 0.05, 0.1, 0.2] //these get trippled.
 const L = 0; //LEFT
 const R = 1; //RIGHT
 
-var gColorIndex = [4,5];
+// var gColorIndex = [4,5];
+var gColorIndex = [3,3];
 var gColorSkyIndex = 2;
 var gColorGroundIndex = 2;
 
@@ -81,7 +83,7 @@ iFade[L] = 0;
 iFade[R] = 0;
 
 
-var gRecordState =  "PLAYING"; //"RECORDING", "PLAYING", "NOTHING"
+var gRecordState =  "NOTHING"; //"RECORDING", "PLAYING", "NOTHING"
 const RECORD_MAX = 400;
 
 var aRecord = [];
@@ -512,7 +514,10 @@ AFRAME.registerComponent('cursor-listener', {
     this.el.addEventListener('mousedown', function (evt) {
       gIsMouseDown = true;
       //console.log("mousedown:" + JSON.stringify(this.el,null,2));
-      setBeat();
+      if (ENABLE_BEATS){
+        setBeat();
+      }
+      
 
     });
     this.el.addEventListener('mouseup', function (evt) {
@@ -590,7 +595,9 @@ init: function () {
 
   el.addEventListener('gripdown', function (evt) {
     gGripDown[H] = true;
-    setBeat();
+    if (ENABLE_BEATS){
+      setBeat();
+    }
   });        
   el.addEventListener('gripup', function (evt) {
     gGripDown[H] = false;
