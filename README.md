@@ -18,10 +18,9 @@ B/Y: Prevent trail connection. Set Beat with 2 clicks.
 
 Grip Buttons: Increments Size
 
-
 ## TODO
-Touching trigger brings up wand.
 
+Touching trigger brings up wand.
 
 When starting to draw - by default - do not connect. DONE.
 Light comes from hand always. DONE.
@@ -35,21 +34,30 @@ Only one Beat Button. DONE
 16 beats.
 
 ## WISH LIST
+
 Networking - Dance parthy
 Sharing creations - drawings with others easily
 
 # BENDING
+
 ## LOG
 
 Working on steering water once it is launched.
 
 ## TODO
+
 Sommon the water back.
 Start with a small water - energize it by spinning it.
 Add texture /shader to water surface.
-
 
 ## Run Locally
 
 To Start
 http-server -S -C cert.pem
+
+---- GIT TIP
+
+git checkout glowsticks-beat-2
+git merge -s ours main
+git checkout main
+git merge glowsticks-beat-2
