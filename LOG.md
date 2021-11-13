@@ -26,9 +26,18 @@ How to send data?
 
 h1. LOG
 
+2021-11-13
+
+Work on Firebase.
+Next figure out how to do the users.
+All in one bucket, or each gets their own?
+
+
 2021-06-06
 
 Recording and Playback is working now!
+
+
 
 2021-06-05
 Just need to get the playback working better.

@@ -87,11 +87,13 @@ var gIsMouseDown = false;
 
 //DRAWING PARTS OF LINE.
 const clientId="K" + (Math.random()*1000).toFixed(0)
+console.log(`My Client ID ${clientId}`)
 
 var users={};
 initUser(clientId)
 
 function initUser(CID){
+  console.log(`initUser ${CID}`)
   users[CID] = {};
   users[CID].aParts= [];
   users[CID].aParts[L] = [];
@@ -168,37 +170,45 @@ window.onload = function() {
 
     //FIREBASE catch events. 
 
-    // const starCountRef = ref(db, 'room1/user1/trails/0');
-    // onValue(starCountRef, (snapshot) => {
-    //   const data = snapshot.val();
+    const ref0 = ref(db, 'room1/user1/trails/0');
+    onValue(ref0, (snapshot) => {
+      const data = snapshot.val();
+      handleFirebase(0, data)
+    });
 
-    //   if (data){
-    //     if (data.clientId===clientId){
-    //       //console.log('same clientid. Ignore.')
-    //     }else{
-    //       //console.log(`FIRE: ${JSON.stringify(data, null, 2)}`)
-          
-    //       //debugger;
-    //       if (!users[data.clientId]){
-    //         initUser(data.clientId)
-    //       }
-
-    //       //PAINT 
-    //       var sceneEl = document.querySelector('a-scene');
-    //       var groupEl = document.createElement('a-entity');
-    //       sceneEl.appendChild(groupEl);
-    //       drawGlowstickSegment(groupEl,data, 0, data.clientId)
-
-    //     }
-    //   }
-    // });
+    const ref1 = ref(db, 'room1/user1/trails/1');
+    onValue(ref1, (snapshot) => {
+      const data = snapshot.val();
+      handleFirebase(1, data)
+    });
 
 
     var myVar = setInterval(gameLoop, TICKS_PER_FRAME);
   });
 };
 
+function handleFirebase(hand, data){
+  if (data){
+    if (data.clientId===clientId){
+      console.log('same clientid. Ignore.')
+    }else{
+      console.log('fb hand:'+ hand)
+      //console.log(`FIRE: ${JSON.stringify(data, null, 2)}`)
+      
+      //debugger;
+      if (!users[data.clientId]){
+        initUser(data.clientId)
+      }
 
+      //PAINT 
+      var sceneEl = document.querySelector('a-scene');
+      var groupEl = document.createElement('a-entity');
+      sceneEl.appendChild(groupEl);
+      drawGlowstickSegment(groupEl,data, hand, data.clientId)
+
+    }
+  }
+}
 
     function gameLoop(){
       
@@ -355,15 +365,12 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   drawGlowstickSegment(groupEl, data, hand, clientId)
 
   // PUSH TO FIREBASE:
-  //const db = getDatabase();
   //console.log("research: " + JSON.stringify(newEl1, null, 2))
-
-
-
-  const SEND_TO_FIREBASE = false;
+  const SEND_TO_FIREBASE = true;
 
   if (SEND_TO_FIREBASE){
     set(ref(db, 'room1/user1/trails/' + hand), data);
+    // set(ref(db, `room1/${clientId}/trails/${hand}`), data);
   }
 
   //not working yet.
@@ -410,18 +417,20 @@ function drawGlowstickSegment(groupEl,data, hand, CID){
     vertexC: data.lastPos2
   });
 
-    //Destroy old one and register new one
+  //Destroy old one and register new one
+  console.log(`draw: ${CID} part:${users[CID].iPart[hand]}`)
 
-    if (users[CID].aParts[hand][users[CID].iPart[hand]]){
-      var el = users[CID].aParts[hand][users[CID].iPart[hand]];
-      el.parentNode.removeChild(el);
-    }
 
-    users[CID].aParts[hand][users[CID].iPart[hand]] = groupEl;
-    users[CID].iPart[hand] ++;
-    if (users[CID].iPart[hand] > MAX_PARTICLES){
-      users[CID].iPart[hand] = 0;
-    } 
+  if (users[CID].aParts[hand][users[CID].iPart[hand]]){
+    var el = users[CID].aParts[hand][users[CID].iPart[hand]];
+    el.parentNode.removeChild(el);
+  }
+
+  users[CID].aParts[hand][users[CID].iPart[hand]] = groupEl;
+  users[CID].iPart[hand] ++;
+  if (users[CID].iPart[hand] > MAX_PARTICLES){
+    users[CID].iPart[hand] = 0;
+  } 
 }
 
 
@@ -625,6 +634,8 @@ tick: function (){
 },
 
 init: function () {
+  console.log(`button-listener - init`)
+
   var el = this.el;
   var H;
   var hand = this.data.hand;
@@ -666,7 +677,7 @@ init: function () {
 
   el.addEventListener('triggerdown', function (evt) {
     gTriggerDown[H] = true;
-    //console.log("trigger down:" + H)
+    console.log("trigger down:" + H)
   });        
   el.addEventListener('triggerup', function (evt) {
     gTriggerDown[H] = false;
@@ -704,7 +715,7 @@ init: function () {
 
 
   el.addEventListener('thumbstickmoved', function (evt) {
-    
+    console.log('thumbstickmoved')
     
     if (!gThumbSpent[H]){
       if (evt.detail.y > 0.65) { //DOWN
