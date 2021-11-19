@@ -180,6 +180,7 @@ window.onload = function() {
 
       const ref0 = ref(db, 'room1/user1/trails/0');
       const ref1 = ref(db, 'room1/user1/trails/1');
+      const refHead = ref(db, 'room1/user1/head');
 
       onValue(ref0, (snapshot) => {
         const data = snapshot.val();
@@ -190,6 +191,11 @@ window.onload = function() {
       onValue(ref1, (snapshot) => {
         const data = snapshot.val();
         handleFirebase(1, data)
+      });
+
+      onValue(refHead, (snapshot) => {
+        const data = snapshot.val();
+        handleFirebaseHead(data)
       });
     }
 
@@ -228,6 +234,32 @@ function handleFirebase(hand, data){
   }
 }
 
+function handleFirebaseHead(data){
+  
+
+  if (data){
+
+    for (const property in data) {
+      // console.log(`${property}: ${object[property]}`);
+      //debugger;
+      if (property[0]==='K'){
+        if (property !== clientId){
+          const d = data[property];
+          const el = document.getElementById("head")
+          // console.log(`onHead.. ok`)
+      
+          if (el){
+            el.object3D.position.set(d.pos.x, d.pos.y, d.pos.z)
+            el.object3D.rotation.set(d.rot.x, d.rot.y, d.rot.z)
+            // console.log(`onHead.. ok 2.`)
+          }
+
+        }
+      }
+    }
+  }
+}
+
     function gameLoop(){
       
       if (gBeatState=="BEATING"){
@@ -261,6 +293,35 @@ function handleFirebase(hand, data){
           console.log("RECORDING SAVED.")
           localStorage.setItem('vr-recording-2', JSON.stringify(aRecord,null,2));
         }
+      }
+
+
+      const SEND_HEAD_TO_FIREBASE = true;
+
+      if (SEND_HEAD_TO_FIREBASE){
+        const el = document.getElementById("cam")
+        if (!el){
+          return;
+        }
+        const pos = el.object3D.position;
+        const rot = el.object3D.rotation;
+        
+        const data = {
+          clientId: clientId,
+          pos:pos,
+          rot:{x:rot._x, y: rot._y, z: rot._z}
+        }
+        var dbpath = `room1/user1/head/${clientId}`
+        //console.log(`SEND to FIREBASE: ${dbpath}`)
+        //console.log(JSON.stringify(data, null, 2))
+        set(ref(db, dbpath), data).then(() => {
+          // Data saved successfully!
+          //console.log(`cool`);
+        })
+        .catch((error) => {
+          // The write failed...
+          console.log(`ERROR - SEND to FIREBASE: ${JSON.stringify(error, null, 2)}`)
+        });;
       }
     }
 
@@ -1001,7 +1062,6 @@ console.log("START - end of code 2")
 
     <a-text value="Happy Birthday, Space Cowboy!" color="#222222" position="2 1 2" rotation="0 180 0" ></a-text>
 
-     
 
 
     <a-assets>
@@ -1031,14 +1091,25 @@ console.log("START - end of code 2")
 
 
 
+    <a-entity id="head" position="0 0 -2" rotation="0 0 0 ">
+      <a-triangle id="head-left" color="#333" vertex-a="0 0.12 0"  vertex-b="0 -0.2 0"  vertex-c="-0.2 0.15 0.2"   material="side: double"></a-triangle>
+      <a-triangle id="head-right" color="#555" vertex-a="0 0.12 0"  vertex-b="0 -0.2 0"  vertex-c="0.2 0.15 0.2"   material="side: double"></a-triangle>
+      <!-- <a-triangle id="head-eyes" color="#F66" vertex-a="-0.15 0 0"  vertex-b="0.15 0 0"  vertex-c="0 -0.05 0"   material="side: double"></a-triangle> -->
+      <a-cylinder color="#F66" height="0.02" radius="0.2" theta-start="140" theta-length="80" position=" 0 0 0.2" side="double" open-ended="true"></a-cylinder>
+
+    </a-entity>
+
+    <!-- <a-triangle id="hand-left" color="#333" vertex-a="0 0.12 0"  vertex-b="0 -0.2 0"  vertex-c="-0.2 0.15 0.2"   material="side: double"></a-triangle>
+    <a-triangle id="hand-right" color="#555" vertex-a="0 0.12 0"  vertex-b="0 -0.2 0"  vertex-c="0.2 0.15 0.2"   material="side: double"></a-triangle> -->
 
 
-    <a-entity position="0 1.6 2" camera look-controls wasd-controls>
+    <a-entity id="cam" position="0 1.6 2" camera look-controls wasd-controls>
       <a-entity id="a-cursor" cursor="fuse: true; fuseTimeout: 500"
         position="0 0 -1"
         geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
         material="color: black; shader: flat; visible:false;">
       </a-entity>
+
     </a-entity>
 
   </a-scene>

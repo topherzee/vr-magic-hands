@@ -39,6 +39,7 @@ Solution was to add the button detectors later with code at init time.
   document.getElementById('hand-left').setAttribute("button-listener","hand:left")
     document.getElementById('hand-right').setAttribute("button-listener","hand:right")
   
+  Head!!!
   
 
 
