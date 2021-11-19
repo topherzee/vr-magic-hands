@@ -14,9 +14,9 @@
 
     <script src="components/ground.js"></script>
     <script src="shaders/skyGradient.js"></script>
-
+<!-- 
     <script src="https://unpkg.com/aframe-event-set-component@4.0.1/dist/aframe-event-set-component.min.js"></script>
-  
+   -->
 
   <script type="module">
 
@@ -36,8 +36,10 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-// Get a reference to the database service
 const db = getDatabase(app);
+
+// const app = null;
+// const db = null;
 
 
 // GAME LOOP
@@ -47,7 +49,7 @@ const VELOCITY_ON = false;
 
 const FADEOUT_MS = 100;
 
-const MAX_PARTICLES = 20;
+const MAX_PARTICLES = 35;
 const MAX_FADES = 10;
 const VEL_FACTOR = 10;
 
@@ -59,7 +61,8 @@ const YELLOW = 3;
 const GREEN = 4
 const BLUE = 5;
 const RED = 6; 
-const COLORS = ["grey","white","black","yellow","green","blue","red"];//,"pink"
+const PINK = 7; 
+const COLORS = ["grey","white","black","yellow","green","blue","red","#FF69B4"];//,"pink"
 const SIZES = [0.001, 0.005, 0.02, 0.05, 0.1, 0.2] //these get trippled.
 
 const L = 0; //LEFT
@@ -170,21 +173,36 @@ window.onload = function() {
 
     //FIREBASE catch events. 
 
-    const ref0 = ref(db, 'room1/user1/trails/0');
-    onValue(ref0, (snapshot) => {
-      const data = snapshot.val();
-      handleFirebase(0, data)
-    });
 
-    const ref1 = ref(db, 'room1/user1/trails/1');
-    onValue(ref1, (snapshot) => {
-      const data = snapshot.val();
-      handleFirebase(1, data)
-    });
+    const FB_USE = true;
+
+    if (FB_USE){
+
+      const ref0 = ref(db, 'room1/user1/trails/0');
+      const ref1 = ref(db, 'room1/user1/trails/1');
+
+      onValue(ref0, (snapshot) => {
+        const data = snapshot.val();
+        handleFirebase(0, data)
+      });
+
+      
+      onValue(ref1, (snapshot) => {
+        const data = snapshot.val();
+        handleFirebase(1, data)
+      });
+    }
 
 
+
+    console.log("START game loop")
+    //document.getElementById('sky').setAttribute("button-listener","hand:round")
+    document.getElementById('hand-left').setAttribute("button-listener","hand:left")
+    document.getElementById('hand-right').setAttribute("button-listener","hand:right")
     var myVar = setInterval(gameLoop, TICKS_PER_FRAME);
+
   });
+  console.log("STARTUP Complete")
 };
 
 function handleFirebase(hand, data){
@@ -192,7 +210,7 @@ function handleFirebase(hand, data){
     if (data.clientId===clientId){
       console.log('same clientid. Ignore.')
     }else{
-      console.log('fb hand:'+ hand)
+      //console.log('fb hand:'+ hand)
       //console.log(`FIRE: ${JSON.stringify(data, null, 2)}`)
       
       //debugger;
@@ -369,7 +387,17 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   const SEND_TO_FIREBASE = true;
 
   if (SEND_TO_FIREBASE){
-    set(ref(db, 'room1/user1/trails/' + hand), data);
+    var dbpath = 'room1/user1/trails/' + hand
+    //console.log(`SEND to FIREBASE: ${dbpath}`)
+    //console.log(JSON.stringify(data, null, 2))
+    set(ref(db, dbpath), data).then(() => {
+      // Data saved successfully!
+      //console.log(`cool`);
+    })
+    .catch((error) => {
+      // The write failed...
+      console.log(`ERROR - SEND to FIREBASE: ${JSON.stringify(error, null, 2)}`)
+    });;
     // set(ref(db, `room1/${clientId}/trails/${hand}`), data);
   }
 
@@ -418,7 +446,7 @@ function drawGlowstickSegment(groupEl,data, hand, CID){
   });
 
   //Destroy old one and register new one
-  console.log(`draw: ${CID} part:${users[CID].iPart[hand]}`)
+  //console.log(`draw: ${CID} part:${users[CID].iPart[hand]}`)
 
 
   if (users[CID].aParts[hand][users[CID].iPart[hand]]){
@@ -621,6 +649,20 @@ AFRAME.registerComponent('cursor-listener', {
     });
   }
 });
+
+
+AFRAME.registerComponent('button-listener-test', {
+  schema:{
+      hand: {type: 'string'}
+    },
+
+    tick: function (){
+
+    },
+  init: function () {
+    console.log(`button-listener - init TEST`)
+  }
+})
 
 
 AFRAME.registerComponent('button-listener', {
@@ -912,35 +954,35 @@ function GermanFlagFast(beat){
 
         
 
-    
+console.log("START - end of code 2")    
 </script>
 </head>
 
 <body>
   <a-scene
   id="sky"
-  avatar-recorder avatar-replayer
+  
     renderer="colorManagement: true;"
     cursor="rayOrigin: mouse"
     raycaster="objects: [cube]" fog="color: #bc483e; near: 0; far: 65;"
-    background="color: blue"
+    background="color: black"
     >
+    <!-- avatar-recorder avatar-replayer -->
 
-    <a-text value="Happy Birthday, Space Cowboy!" color="#333333" position="2 1 2" rotation="0 180 0" ></a-text>
-
-    <a-entity id="sky" cursor-listener
+    <a-entity id="sky2" cursor-listener
     geometry="primitive: sphere; radius: 65;"
     material="shader: skyGradient; colorTop: #353449; colorBottom: #BC483E; side: back"></a-entity>
-    
+  
+
     <!-- Hands -->
 
-    <a-entity  oculus-touch-controls="hand: left; model:true" id="hand-left" button-listener="hand:left;">
+    <a-entity  oculus-touch-controls="hand: left; model:true" id="hand-left" >
       <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
       <a-entity id="glowstick-left-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader: flat; color: green;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
       <a-entity id="thumb-control-left" position="0 0.05 -0.01" rotation="40 0 0" material="visible:false; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
     </a-entity>
-
-    <a-entity  oculus-touch-controls="hand: right; model:true" id="hand-right"  button-listener="hand:right;">
+    <!-- button-listener="hand:right;" -->
+    <a-entity  oculus-touch-controls="hand: right; model:true" id="hand-right"  >
       <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
       <a-entity id="glowstick-right-tip" position="0 0.15 -0.1" rotation="0 0 0" material="visible:true; shader:flat; color: yellow;" geometry="primitive: box; height: 0.005; width: 0.005; depth: 0.005"></a-entity>
       <a-entity id="thumb-control-right" position="0 0.05 -0.01" rotation="40 0 0" material="visible:false; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.1; depth: 0.001"></a-entity>
@@ -957,9 +999,9 @@ function GermanFlagFast(beat){
     </a-entity>
 
 
+    <a-text value="Happy Birthday, Space Cowboy!" color="#222222" position="2 1 2" rotation="0 180 0" ></a-text>
 
-
-
+     
 
 
     <a-assets>

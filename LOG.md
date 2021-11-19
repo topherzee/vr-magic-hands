@@ -14,8 +14,9 @@ How to send data?
 3. Just send events. '
    Each reciever knows how to render events.
    Complictated.
+4. Send each new trail segment using set. Reciever adds the new segment, and takes care of deleting the old segment. Pretty efficient!!
 
-2 sounds good.
+Doing 4..
 
 - room1
   - user1
@@ -24,9 +25,26 @@ How to send data?
     - updates left.
     - updates right.
 
+
+Animated things. Wormies.
+
 h1. LOG
 
+2021-11-19
+
+Check that its ready for birthday with Tim.
+Long enough trail.
+There was a bug taht would cause buttons not to work.
+Solution was to add the button detectors later with code at init time.
+  document.getElementById('hand-left').setAttribute("button-listener","hand:left")
+    document.getElementById('hand-right').setAttribute("button-listener","hand:right")
+  
+  
+
+
 2021-11-13
+
+4. Send each new trail segment using set. Reciever adds the new segment, and takes care of deleting the old segment. Pretty efficient!!
 
 Work on Firebase.
 Next figure out how to do the users.
