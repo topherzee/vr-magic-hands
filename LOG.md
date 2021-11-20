@@ -40,6 +40,9 @@ Solution was to add the button detectors later with code at init time.
     document.getElementById('hand-right').setAttribute("button-listener","hand:right")
   
   Head!!!
+  Hands!!!
+  Turned off the opacity ramping as that seemed to screw up performance.
+  Now you can add 'p'  parameter for how many segments the lines have.
   
 
 

@@ -42,15 +42,26 @@ const db = getDatabase(app);
 // const db = null;
 
 
+const params = new URLSearchParams(window.location.search)
 // GAME LOOP
 const TICKS_PER_FRAME = 20;
 
 const VELOCITY_ON = false;
 
-const FADEOUT_MS = 100;
 
-const MAX_PARTICLES = 35;
+const FADEOUT_MS = 200;
 const MAX_FADES = 10;
+
+
+var MAX_PARTICLES = 35; //can be overriden with P querystring.
+
+if (params.has('p')){
+  MAX_PARTICLES = parseInt(params.get('p'))
+}
+
+const FIREBASE_HEAD_SLOWDOWN = 2
+var firebase_counter = 0
+
 const VEL_FACTOR = 10;
 
 const ENABLE_BEATS = false;
@@ -118,8 +129,7 @@ iFade[R] = 0;
 
 var gRecordState =  "NOTHING"; //"RECORDING", "PLAYING", "NOTHING"
 
-const params = new URLSearchParams(window.location.search)
-if (params.has('PLAY')){
+if (params.has('play')){
   gRecordState = "PLAYING"
 }
 
@@ -178,6 +188,15 @@ window.onload = function() {
 
     if (FB_USE){
 
+      // Clear existing users, otherwise head and hand is confused by all the ghost users:
+      var dbpath = `room1/user1/head/`
+        set(ref(db, dbpath), null).then(() => {
+        })
+        .catch((error) => {
+          console.log(`ERROR - SEND to FIREBASE: ${JSON.stringify(error, null, 2)}`)
+        });;
+
+
       const ref0 = ref(db, 'room1/user1/trails/0');
       const ref1 = ref(db, 'room1/user1/trails/1');
       const refHead = ref(db, 'room1/user1/head');
@@ -187,7 +206,6 @@ window.onload = function() {
         handleFirebase(0, data)
       });
 
-      
       onValue(ref1, (snapshot) => {
         const data = snapshot.val();
         handleFirebase(1, data)
@@ -245,15 +263,26 @@ function handleFirebaseHead(data){
       if (property[0]==='K'){
         if (property !== clientId){
           const d = data[property];
-          const el = document.getElementById("head")
-          // console.log(`onHead.. ok`)
-      
-          if (el){
-            el.object3D.position.set(d.pos.x, d.pos.y, d.pos.z)
-            el.object3D.rotation.set(d.rot.x, d.rot.y, d.rot.z)
+          const el_head = document.getElementById("head")
+          if (el_head){
+            el_head.object3D.position.set(d.pos_head.x, d.pos_head.y, d.pos_head.z)
+            el_head.object3D.rotation.set(d.rot_head.x, d.rot_head.y, d.rot_head.z)
             // console.log(`onHead.. ok 2.`)
           }
 
+          const el_left = document.getElementById("friend-hand-left")
+          if (el_left){
+            el_left.object3D.position.set(d.pos_left.x, d.pos_left.y, d.pos_left.z)
+            el_left.object3D.rotation.set(d.rot_left.x, d.rot_left.y, d.rot_left.z)
+            // console.log(`onHead.. ok 2.`)
+          }
+
+          const el_right = document.getElementById("friend-hand-right")
+          if (el_right){
+            el_right.object3D.position.set(d.pos_right.x, d.pos_right.y, d.pos_right.z)
+            el_right.object3D.rotation.set(d.rot_right.x, d.rot_right.y, d.rot_right.z)
+            // console.log(`onHead.. ok 2.`)
+          }
         }
       }
     }
@@ -296,20 +325,38 @@ function handleFirebaseHead(data){
       }
 
 
+      //SLOW IT DOWN..
+      firebase_counter++;
+        if (firebase_counter>FIREBASE_HEAD_SLOWDOWN){
+          firebase_counter = 0;
+        }
+
       const SEND_HEAD_TO_FIREBASE = true;
 
-      if (SEND_HEAD_TO_FIREBASE){
-        const el = document.getElementById("cam")
-        if (!el){
+      if (SEND_HEAD_TO_FIREBASE && firebase_counter==0){
+
+        const el_head = document.getElementById("cam")
+        const el_left = document.getElementById("hand-left")
+        const el_right = document.getElementById("hand-right")
+        if (!el_head || !el_left || !el_right){
           return;
         }
-        const pos = el.object3D.position;
-        const rot = el.object3D.rotation;
+        const pos_head = el_head.object3D.position;
+        const rot_head = el_head.object3D.rotation;
+        const pos_left = el_left.object3D.position;
+        const rot_left = el_left.object3D.rotation;
+        const pos_right = el_right.object3D.position;
+        const rot_right = el_right.object3D.rotation;
         
         const data = {
           clientId: clientId,
-          pos:pos,
-          rot:{x:rot._x, y: rot._y, z: rot._z}
+          pos_head:pos_head,
+          rot_head:{x: rot_head._x, y: rot_head._y, z: rot_head._z},
+          pos_left:pos_left,
+          rot_left:{x: rot_left._x, y: rot_left._y, z: rot_left._z},
+          pos_right:pos_right,
+          rot_right:{x: rot_right._x, y: rot_right._y, z: rot_right._z},
+
         }
         var dbpath = `room1/user1/head/${clientId}`
         //console.log(`SEND to FIREBASE: ${dbpath}`)
@@ -558,15 +605,19 @@ function createFadeGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, n
   newEl1.setAttribute('animation__opacity', {
     property: 'material.opacity',
     dur: FADEOUT_MS,
-    easing: 'easeOutQuad',
+    // easing: 'easeOutQuad',
+    easing: 'steps(1)',
     to: '0'
   })
   newEl2.setAttribute('animation__opacity', {
     property: 'material.opacity',
     dur: FADEOUT_MS,
-    easing: 'easeOutQuad',
+    // easing: 'easeOutQuad',
+    easing: 'steps(1)',
     to: '0'
   })
+
+
 
 //Destroy old one and register new one
 
@@ -1099,8 +1150,8 @@ console.log("START - end of code 2")
 
     </a-entity>
 
-    <!-- <a-triangle id="hand-left" color="#333" vertex-a="0 0.12 0"  vertex-b="0 -0.2 0"  vertex-c="-0.2 0.15 0.2"   material="side: double"></a-triangle>
-    <a-triangle id="hand-right" color="#555" vertex-a="0 0.12 0"  vertex-b="0 -0.2 0"  vertex-c="0.2 0.15 0.2"   material="side: double"></a-triangle> -->
+    <a-triangle id="friend-hand-left" color="#333" vertex-a="0 0 0"  vertex-b="0 -0.2 0"  vertex-c="-0.1 -0.2 0"   material="side: double"></a-triangle>
+    <a-triangle id="friend-hand-right" color="#555" vertex-a="0 0 0"  vertex-b="0 -0.2 0"  vertex-c="0.1 -0.2 0"   material="side: double"></a-triangle>
 
 
     <a-entity id="cam" position="0 1.6 2" camera look-controls wasd-controls>
