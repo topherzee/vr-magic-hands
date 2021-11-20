@@ -1142,19 +1142,19 @@ console.log("START - end of code 2")
 
 
 
-    <a-entity id="head" position="0 0 -2" rotation="0 0 0 ">
-      <a-triangle id="head-left" color="#333" vertex-a="0 0.12 0"  vertex-b="0 -0.2 0"  vertex-c="-0.2 0.15 0.2"   material="side: double"></a-triangle>
-      <a-triangle id="head-right" color="#555" vertex-a="0 0.12 0"  vertex-b="0 -0.2 0"  vertex-c="0.2 0.15 0.2"   material="side: double"></a-triangle>
+    <a-entity id="head" position="0 0 -1" rotation="0 0 0 ">
+      <a-triangle id="head-left" color="#333" vertex-a="0 0.12 0"  vertex-b="0 -0.15 0"  vertex-c="-0.2 0.15 0.2"   material="side: double"></a-triangle>
+      <a-triangle id="head-right" color="#555" vertex-a="0 0.12 0"  vertex-b="0 -0.15 0"  vertex-c="0.2 0.15 0.2"   material="side: double"></a-triangle>
       <!-- <a-triangle id="head-eyes" color="#F66" vertex-a="-0.15 0 0"  vertex-b="0.15 0 0"  vertex-c="0 -0.05 0"   material="side: double"></a-triangle> -->
       <a-cylinder color="#F66" height="0.02" radius="0.2" theta-start="140" theta-length="80" position=" 0 0 0.2" side="double" open-ended="true"></a-cylinder>
 
     </a-entity>
 
-    <a-triangle id="friend-hand-left" color="#333" vertex-a="0 0 0"  vertex-b="0 -0.2 0"  vertex-c="-0.1 -0.2 0"   material="side: double"></a-triangle>
-    <a-triangle id="friend-hand-right" color="#555" vertex-a="0 0 0"  vertex-b="0 -0.2 0"  vertex-c="0.1 -0.2 0"   material="side: double"></a-triangle>
+    <a-triangle id="friend-hand-left" color="#333" vertex-a="0 0 0"  vertex-b="0 -0.15 0"  vertex-c="-0.1 -0.15 0"   material="side: double"></a-triangle>
+    <a-triangle id="friend-hand-right" color="#555" vertex-a="0 0 0"  vertex-b="0 -0.15 0"  vertex-c="0.1 -0.15 0"   material="side: double"></a-triangle>
 
 
-    <a-entity id="cam" position="0 1.6 2" camera look-controls wasd-controls>
+    <a-entity id="cam" position="0 1.4 2" camera look-controls wasd-controls>
       <a-entity id="a-cursor" cursor="fuse: true; fuseTimeout: 500"
         position="0 0 -1"
         geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
