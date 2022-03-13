@@ -4,19 +4,10 @@
     <meta charset="utf-8">
     <title>MAGIC HANDS</title>
     <meta name="description" content="Tracked Controls – A-Frame">
-    <!-- <script src="../../../dist/aframe-master.js"></script> -->
+
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-
-    <!-- <script src="components/aabb-collider.js"></script> -->
-    <!-- <script src="components/grab.js"></script> -->
-    <!-- <script src="components/ground.js"></script>
-    <script src="shaders/skyGradient.js"></script> -->
-
     <script src="components/ground.js"></script>
     <script src="shaders/skyGradient.js"></script>
-<!-- 
-    <script src="https://unpkg.com/aframe-event-set-component@4.0.1/dist/aframe-event-set-component.min.js"></script>
-   -->
 
   <script type="module">
 
@@ -35,8 +26,17 @@ const firebaseConfig = {
   appId: "1:527976286561:web:23a5dfbd1bb8712e04dd20"
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+const NETWORKED = false;
+const FB_USE = false;
+
+
+var app, db;
+
+if (NETWORKED){
+  app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+}
+
 
 // const app = null;
 // const db = null;
@@ -105,6 +105,9 @@ function initUser(CID){
   users[CID].iPart = [];
   users[CID].iPart[L] = 0;
   users[CID].iPart[R] = 0;
+
+  // users[CID].aWorms = [];
+  // users[CID].iWorm
 }
 
 
@@ -174,9 +177,8 @@ window.onload = function() {
     //FIREBASE catch events. 
 
 
-    const FB_USE = true;
 
-    if (FB_USE){
+    if (FB_USE && NETWORKED){
 
       const ref0 = ref(db, 'room1/user1/trails/0');
       const ref1 = ref(db, 'room1/user1/trails/1');
@@ -228,13 +230,14 @@ function handleFirebase(hand, data){
   }
 }
 
+
+
     function gameLoop(){
       
       if (gBeatState=="BEATING"){
         getBeat(GermanFlag);
       }
 
-      //console.log("beat:" + getBeat())
       //Cursor
       if (gIsMouseDown){
         var cursor = document.querySelector('#a-cursor'); 
@@ -345,7 +348,16 @@ function handleFirebase(hand, data){
         var elGlowStick = document.querySelector('#glowstick-' + handString ); 
         elGlowStick.setAttribute('position', pos);
         elGlowStick.object3D.setRotationFromQuaternion(rot)
-        pos2 = document.querySelector('#glowstick-' + handString + '-2').object3D.getWorldPosition(pos2);
+        
+        //pos2 = document.querySelector('#glowstick-' + handString + '-2').object3D.getWorldPosition(pos2);
+
+        pos2 = new THREE.Vector3(0.2,0,0);
+
+        q2 = new THREE.Quaternion();
+        rot = elHand.object3D.getWorldQuaternion(q2);
+        pos2.applyQuaternion(rot)
+
+        pos2.add(pos)
 
         if (!gDrawing[H]){
           gDrawing[H] = true;
@@ -386,7 +398,7 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   //console.log("research: " + JSON.stringify(newEl1, null, 2))
   const SEND_TO_FIREBASE = true;
 
-  if (SEND_TO_FIREBASE){
+  if (SEND_TO_FIREBASE && NETWORKED){
     var dbpath = 'room1/user1/trails/' + hand
     //console.log(`SEND to FIREBASE: ${dbpath}`)
     //console.log(JSON.stringify(data, null, 2))
@@ -402,19 +414,19 @@ function createTrailGlowstick(newPos, newPos2, color, lastPos1, lastPos2, hand, 
   }
 
   //not working yet.
-  if (false && newVel){
+  // if (false && newVel){
 
-    var x = newPos.x + newVel.x;
-    var y=  newPos.y + newVel.y;
-    var z= newPos.z + newVel.z;
+  //   var x = newPos.x + newVel.x;
+  //   var y=  newPos.y + newVel.y;
+  //   var z= newPos.z + newVel.z;
 
-    newEl1.setAttribute('animation__move', {
-          property: 'geometry.vertexA',
-          dur: 2000,
-          easing: 'linear',
-          to: '' + x + ' ' + y + ' ' + z
-        })
-  }
+  //   newEl1.setAttribute('animation__move', {
+  //         property: 'geometry.vertexA',
+  //         dur: 2000,
+  //         easing: 'linear',
+  //         to: '' + x + ' ' + y + ' ' + z
+  //       })
+  // }
  
 }
 
@@ -446,15 +458,18 @@ function drawGlowstickSegment(groupEl,data, hand, CID){
   });
 
   //Destroy old one and register new one
-  //console.log(`draw: ${CID} part:${users[CID].iPart[hand]}`)
 
+  //console.log(`draw: ${CID} part:${iPart}`)
 
-  if (users[CID].aParts[hand][users[CID].iPart[hand]]){
-    var el = users[CID].aParts[hand][users[CID].iPart[hand]];
+  const iPart = users[CID].iPart[hand];
+  const elPart = users[CID].aParts[hand][iPart]
+
+  if (elPart){
+    var el = elPart;
     el.parentNode.removeChild(el);
   }
 
-  users[CID].aParts[hand][users[CID].iPart[hand]] = groupEl;
+  users[CID].aParts[hand][iPart] = groupEl;
   users[CID].iPart[hand] ++;
   if (users[CID].iPart[hand] > MAX_PARTICLES){
     users[CID].iPart[hand] = 0;
@@ -724,6 +739,15 @@ init: function () {
   el.addEventListener('triggerup', function (evt) {
     gTriggerDown[H] = false;
     gDrawing[H] = false;
+
+    // var iWorm = users[CID].iWorm
+    // users[clientId].aWorms[iWorm] = users[clientId].aParts[H].slice()
+    // users[CID].iWorm++;
+
+    // // reset user
+    // users[clientId].aParts[H] = []
+    // users[clientId].iPart[H] = 0;
+
   });
 
   el.addEventListener('triggertouchstart', function (evt) {

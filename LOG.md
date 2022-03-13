@@ -25,10 +25,24 @@ Doing 4..
     - updates left.
     - updates right.
 
-
 Animated things. Wormies.
 
 h1. LOG
+
+2022-03-11
+
+BRANCH: LOOPERS
+Once you draw a worm, it keeps repeating itself.
+
+Need to detect when mouse is up (drawing stops) (on each hand)
+Then start looping the existing parts.
+You know the length, say 20.
+Add padding, like 5, so 25. iLoopMax
+iLoop is the index that counts throgh.
+Each increment:
+
+- Move it 5 UP.
+  //https://127.0.0.1:8080/quat2.html?PLAYD
 
 2021-11-19
 
@@ -36,11 +50,8 @@ Check that its ready for birthday with Tim.
 Long enough trail.
 There was a bug taht would cause buttons not to work.
 Solution was to add the button detectors later with code at init time.
-  document.getElementById('hand-left').setAttribute("button-listener","hand:left")
-    document.getElementById('hand-right').setAttribute("button-listener","hand:right")
-  
-  
-
+document.getElementById('hand-left').setAttribute("button-listener","hand:left")
+document.getElementById('hand-right').setAttribute("button-listener","hand:right")
 
 2021-11-13
 
@@ -50,12 +61,9 @@ Work on Firebase.
 Next figure out how to do the users.
 All in one bucket, or each gets their own?
 
-
 2021-06-06
 
 Recording and Playback is working now!
-
-
 
 2021-06-05
 Just need to get the playback working better.
