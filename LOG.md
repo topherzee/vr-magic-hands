@@ -28,6 +28,12 @@ Doing 4..
 Animated things. Wormies.
 
 h1. LOG
+2022-03-13
+WOrking on Quat2
+Getting close.
+TODO: Draw worm.
+TODO: Stop drawing withh grip. DO THIS NOW!!
+TODO: get the worm to orient based on last position.
 
 2022-03-11
 

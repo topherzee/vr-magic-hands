@@ -46,6 +46,7 @@ var gSizeIndex = [1,0];
 var gDrawing= [false, false];
 
 var gTriggerDown = [false,false];
+var gTriggerDownPrev = [false,false];
 var gTriggerTouch = [false, false];
 var gGripDown = [false,false];
 var gAX_Down = [false,false];
@@ -85,6 +86,8 @@ function initUser(CID){
 function initWorm(worm){
     worm.segs = [];
     worm.iSeg = 0;
+    worm.posDelta = new THREE.Vector3();
+    worm.quatDelta = null;
     worm.mode = "RECORDING" // PLAYING
 }
 
@@ -245,6 +248,7 @@ window.onload = function() {
             q = new THREE.Quaternion();
             rot = elHand.object3D.getWorldQuaternion(q);
             q = rot
+            
         }
 
       //QUAT TEST - positioning a point in space.
@@ -255,47 +259,106 @@ window.onload = function() {
       var finalPos = getPosForSpine(spine, q, pos)
       elQuat.setAttribute('position', finalPos)
 
+      animateWorms();
 
-       if (gTriggerDown[H] || gTriggerTouch[H]){ 
+      //Determine drawing start and end.
+      var started = false;
+      var ended = false;
+
+      if (gTriggerDown[H] ){ 
+        if (!gTriggerDownPrev[H] ){
+          started = true;
+        }
+      }else{
+        if (gTriggerDownPrev[H] ){
+          ended = true;
+        }
+      }
+      gTriggerDownPrev[H] = gTriggerDown[H]
+
+
+      var user = users[clientId];
+      var worm  = {};
+      if (!user.worms[0]){
+          initWorm(worm);
+          user.worms.push(worm)
+      }else{
+          worm = user.worms[0];
+      }
+
+      if (ended){
+        
+        worm.iSeg = 0;
+        worm.mode = "PLAYING"
+        //debugger;
+        //determine delta from the start to the end.
+        var posDelta = new THREE.Vector3();
+        const length = 
+        posDelta.copy(worm.segs[worm.segs.length-1].pos);
+        posDelta.sub(worm.segs[0].pos);
+
+        //const quatDelta = 
+        worm.posDelta = posDelta;
+              
+      }
+
+      if (gTriggerDown[H] ){ 
+        //if (gTriggerDown[H] || gTriggerTouch[H]){ 
 
         if (H==0){
             //record
-            
-            var user = users[clientId];
-            var worm  = {};
-            if (!user.worms[0]){
-                initWorm(worm);
-                user.worms.push(worm)
-            }else{
-                worm = user.worms[0];
-            }
 
-            //var worm = user.worms[0];
-            var seg = {}
-            initSeg(seg);
-            
-            seg.pos = pos;
-            seg.spine = new THREE.Vector3(0, 0.15, -0.5);
-            seg.quat = q;
-            //debugger;
-            worm.segs.push(seg);
+            if (worm.mode=="RECORDING"){
+        
+              var seg = {}
+              initSeg(seg);
+              
+              seg.pos = new THREE.Vector3()
+              seg.pos.copy(pos);
+              seg.spine = new THREE.Vector3(0, 0.15, -0.5);
+              seg.quat = new THREE.Quaternion();
+              seg.quat.copy(q);
 
-            var sceneEl = document.querySelector('a-scene');
-            var groupEl = document.createElement('a-entity');
-            sceneEl.appendChild(groupEl);
-            
-            //debugger;
-            drawWormSegment(groupEl, worm, seg, user);
-            worm.iSeg++;
-            if (worm.iSeg > MAX_PARTICLES){
-                worm.iSeg = 0;
+              //debugger;
+              worm.segs.push(seg);
+
+              var sceneEl = document.querySelector('a-scene');
+              var groupEl = document.createElement('a-entity');
+              sceneEl.appendChild(groupEl);
+              
+              //debugger;
+              if (worm.iSeg > 0){
+                addWormSegment(groupEl, worm, seg, user);
+              }
+              worm.iSeg++;
+              
             }
         }
         
       }
     }
 
-function drawWormSegment(groupEl,worm, seg, user){
+    function animateWorms(){
+
+      var user = users[clientId];
+      user.worms.forEach(worm => {
+        if (worm.mode == "PLAYING"){
+          const seg = worm.segs[worm.iSeg]
+          if (seg){
+            //debugger;
+            //const delta = new THREE.Vector3(0, 0.1, 0);
+            const delta = worm.posDelta;
+            
+            seg.element && seg.element.object3D.position.add(delta)
+          }
+          
+          worm.iSeg = (worm.iSeg+1) % worm.segs.length;
+        }
+      })
+
+    }
+
+function addWormSegment(groupEl,worm, seg, user){
 
     var newEl1 = document.createElement('a-triangle');
     var newEl2 = document.createElement('a-triangle');
@@ -306,8 +369,8 @@ function drawWormSegment(groupEl,worm, seg, user){
 
     groupEl.appendChild(newEl1);
     groupEl.appendChild(newEl2);
-    newEl1.setAttribute('color', data.color);
-    newEl2.setAttribute('color', data.color);
+    newEl1.setAttribute('color', "#ff0000");
+    newEl2.setAttribute('color', "#0000ff");
     newEl1.setAttribute('material','side: double; transparent: false;')
     newEl2.setAttribute('material','side: double; transparent: false;')
 
@@ -330,9 +393,9 @@ function drawWormSegment(groupEl,worm, seg, user){
 
         newEl2.setAttribute('geometry', {
             primitive: 'triangle',
-            vertexA: data.pos1,
-            vertexB: data.pos2,
-            vertexC: data.lastPos2
+            vertexA: pos1,
+            vertexB: pos2,
+            vertexC: lastPos2
         });
 
     }
