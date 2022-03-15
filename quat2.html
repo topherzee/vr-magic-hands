@@ -237,8 +237,8 @@ window.onload = function() {
             gTriggerTouch[H] = aRecord[H][iRecord].buttons.trigger_touch;
 
             iRecord ++;
-                if (iRecord >= aRecord[H].length){
-                iRecord = 0;
+            if (iRecord >= aRecord[H].length){
+              iRecord = 0;
             }
             
         }else{
@@ -279,12 +279,14 @@ window.onload = function() {
 
       var user = users[clientId];
       var worm  = {};
-      if (!user.worms[0]){
+
+      if (started){
           initWorm(worm);
           user.worms.push(worm)
-      }else{
-          worm = user.worms[0];
+      }{
+        worm = user.worms[user.worms.length-1];
       }
+
 
       if (ended){
         
@@ -293,8 +295,10 @@ window.onload = function() {
         //debugger;
         //determine delta from the start to the end.
         var posDelta = new THREE.Vector3();
-        const length = 
-        posDelta.copy(worm.segs[worm.segs.length-1].pos);
+        var len = worm.segs.length
+        var segEnd = worm.segs[len-1]
+        var posEnd = segEnd.pos
+        posDelta.copy(posEnd);
         posDelta.sub(worm.segs[0].pos);
 
         //const quatDelta = 
