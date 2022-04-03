@@ -11,18 +11,27 @@
 
   <script type="module">
 
+//HELP FOR THE PLANET GRAVITY:
+//https://codepen.io/Grilly86/pen/BapwXz
+
 // GAME LOOP
-const TICKS_PER_FRAME = 20;
+const TICKS_PER_FRAME = 100; //1000
 
 const VELOCITY_ON = false;
 
 const FADEOUT_MS = 100;
 
-const MAX_PARTICLES = 35;
+const MAX_PARTICLES = 1;
 const MAX_FADES = 10;
 const VEL_FACTOR = 10;
 
-const NUM_MOTES = 30;
+var options = {
+  G: 0.005,
+  TRAIL_LENGTH: 20,
+  NUM_MOTES: 60
+} 
+
+
 
 const ENABLE_BEATS = false;
 const GREY = 0;
@@ -76,27 +85,55 @@ function initUser(CID){
 
 }
 
+function initOrb(orb, x, y, z){
+
+  orb.mass = 10; //kg.
+  orb.pos = new THREE.Vector3(x, y, z);
+  orb.quatDelta = null;
+
+  var orbEl = document.createElement('a-sphere');
+  orbEl.setAttribute('material','side: double; transparent: false;')
+  orbEl.setAttribute('color', "rgb(255,255,0)");
+  orbEl.setAttribute('radius', 0.5);
+  orbEl.setAttribute('position', orb.pos);
+  //orbEl.object3D.position.set(-1, 2, -3);
+
+  var sceneEl = document.querySelector('a-scene');
+  sceneEl.appendChild(orbEl);
+  //debugger;
+}
+
+
 function initMote(mote){
     mote.mass = 0.1;
-    mote.segs = [];
-    mote.iSeg = 0;
+    mote.trails = [];
+    mote.iTrail = 0;
     mote.pos = new THREE.Vector3();
     mote.quatDelta = null;
 
-    var SPREAD = 4
-    mote.pos.x = (Math.random()*SPREAD)
-    mote.pos.y = (Math.random()*SPREAD)
-    mote.pos.z = (Math.random()*SPREAD)
+    var SPREAD = 1
+    mote.pos.x = (Math.random()*SPREAD) - SPREAD/2
+    mote.pos.y = (Math.random()*SPREAD) - SPREAD/2
+    mote.pos.z = (Math.random()*SPREAD) - SPREAD/2
 
+    //mote.vel = new THREE.Vector3(0.01, 0, 0);
     mote.vel = new THREE.Vector3(0.01, 0, 0);
 
+    mote.accel = new THREE.Vector3();
+    
+    const r = (Math.random()*255).toFixed(0);
+    const g = (Math.random()*255).toFixed(0);
+    const b = (Math.random()*255).toFixed(0);
+    mote.color = `rgb(${r},${g},${b})`;
+    
     //const clientId="K" + (Math.random()*1000).toFixed(0)
 
     //var moteEl = document.createElement('a-cube');
     var moteEl = document.createElement('a-sphere');
-    moteEl.setAttribute('radius', 0.05);
+    //moteEl.setAttribute('radius', 0.05);
+    moteEl.setAttribute('radius', 0.00);
     moteEl.setAttribute('material','side: double; transparent: false;')
-    moteEl.setAttribute('color', "rgb(255,0,0)");
+    moteEl.setAttribute('color', mote.color);
     moteEl.setAttribute('position', mote.pos);
 
     mote.moteEl = moteEl;
@@ -106,49 +143,48 @@ function initMote(mote){
 }
 
 
-function initOrb(orb){
 
-  orb.mass = 10; //kg.
-  orb.posDelta = new THREE.Vector3();
-  orb.quatDelta = null;
+function initTrail(trail, mote){
+  trail.pos = new THREE.Vector3();
 
-  var orbEl = document.createElement('a-sphere');
-  orbEl.setAttribute('material','side: double; transparent: false;')
-  orbEl.setAttribute('color', "rgb(255,255,0)");
-  orbEl.setAttribute('radius', 0.5);
-  //orbEl.setAttribute('position', mote.posDelta);
-  orbEl.object3D.position.set(-1, 2, -3);
+  var trailEl = document.createElement('a-entity');
+  trailEl.setAttribute("line","start: 0 0 0; end: 0 0.01 0; color:" + mote.color);
+  
+  // var trailEl = document.createElement('a-box');
+  // trailEl.setAttribute('radius', 0.005);
+  // trailEl.setAttribute('depth', 0.005);
+  // trailEl.setAttribute('height', 0.005);
+  // trailEl.setAttribute('width', 0.005);
+  // trailEl.setAttribute('material','side: double; transparent: false;')
+  // trailEl.setAttribute('color', "rgb(0,0,255)");
+
+  // Traiangle
+  // var trailEl = makeTrailEl(trail, mote)
+
+
+  trail.trailEl = trailEl;
 
   var sceneEl = document.querySelector('a-scene');
-  sceneEl.appendChild(orbEl);
-  //debugger;
+  sceneEl.appendChild(trailEl);
 }
 
-function initSeg(seg){
-    seg.pos = new THREE.Vector3();
-    seg.spine = new THREE.Vector3(); //The extension fromthe world position.
-    seg.quat = new THREE.Quaternion();
-    seg.posChange = new THREE.Vector3();
-    seg.quatChange = new THREE.Quaternion();
+function makeTrailEl(trail, mote){
+  var trailEl = document.createElement('a-triangle');
+  trailEl.setAttribute('material','side: double; transparent: false;')
+  trailEl.setAttribute('color', mote.color);
+  setGeometry(trailEl, mote.pos)
+  return trailEl
 }
 
-function getPosForSpine(spine, q, pos1){
-    var pos2 =  new THREE.Vector3();
-    pos2.copy(spine);
-    pos2.applyQuaternion(q);
-    pos2.add(pos1);
-    return pos2;
+function setGeometry(trailEl, pos){
+  trailEl.setAttribute('geometry', {
+      primitive: 'triangle',
+      vertexA: pos,
+      vertexB: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0.1, 0)),
+      vertexC: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0, 0.1))
+  });
 }
 
-/* worm/mote
-    segs
-        3dobject
-        pos
-        quat
-        posChange
-        quatChange
-    iSeg
-*/
 
 var gRecordState =  "NOTHING"; //"RECORDING", "PLAYING", "NOTHING"
 
@@ -224,7 +260,7 @@ function initMotes(){
   var user = users[clientId];
   //user.motes.forEach(mote => {
 
-  for (var i=0; i<NUM_MOTES; i++){
+  for (var i=0; i< options.NUM_MOTES; i++){
       var mote = {};
       initMote(mote)
       user.motes.push(mote)
@@ -239,8 +275,12 @@ function initOrbs(){
 
   // for (var i=0; i<NUM_MOTES; i++){
       var orb = {};
-      initOrb(orb)
+      initOrb(orb,-1, 2, -3)
       user.orbs.push(orb)
+
+      var orb2 = {};
+      initOrb(orb2,1, 2, -4)
+      user.orbs.push(orb2)
   // }
 
 }
@@ -263,260 +303,70 @@ function initOrbs(){
     }
 
 
-    function gameLoop_Hand(H, handString){
-
-        var q;
-
-        var elHand = document.querySelector('#hand-' + handString); 
-
-        var pos;
-        var rot;
-  
-
-        if (gRecordState === "PLAYING"){
-            
-            //HANDLE EVENTS
-            if (aRecord[H][iRecord].events.length > 0){
-                var events = aRecord[H][iRecord].events;
-                for (var i=0; i<events.length; i++){
-                    var event = events[i];
-                    elHand.emit(event.name, event.detail);
-                }
-            }
-            
-            //HANDLE POSITION AND ROTATION
-
-            pos = aRecord[H][iRecord].pos;
-            rot = aRecord[H][iRecord].rot;
-
-            elHand.setAttribute('position', pos)
-
-            var r = rot;
-            q = new THREE.Quaternion(r._x, r._y, r._z, r._w);
-            elHand.object3D.setRotationFromQuaternion(q);
-
-            gTriggerDown[H] = aRecord[H][iRecord].buttons.trigger_down;
-            gTriggerTouch[H] = aRecord[H][iRecord].buttons.trigger_touch;
-
-            iRecord ++;
-            if (iRecord >= aRecord[H].length){
-              iRecord = 0;
-            }
-            
-        }else{
-            //NORMAL. Controllers
-            pos = elHand.getAttribute('position');
-            
-            q = new THREE.Quaternion();
-            rot = elHand.object3D.getWorldQuaternion(q);
-            q = rot
-            
-        }
-
-      //QUAT TEST - positioning a point in space.
-
-        var elQuat = document.querySelector('#quat-' + handString); 
-      //var pos = elQuat.getAttribute('position');
-      var spine = new THREE.Vector3(0, 0.15, -0.5);
-      var finalPos = getPosForSpine(spine, q, pos)
-      elQuat.setAttribute('position', finalPos)
-
-      //animateWorms();
-      
-
-      //Determine drawing start and end.
-      var started = false;
-      var ended = false;
-
-      if (gTriggerDown[H] ){ 
-        if (!gTriggerDownPrev[H] ){
-          started = true;
-        }
-      }else{
-        if (gTriggerDownPrev[H] ){
-          ended = true;
-        }
-      }
-      gTriggerDownPrev[H] = gTriggerDown[H]
-
-
-      var user = users[clientId];
-      var worm  = {};
-
-      if (started){
-          initWorm(worm);
-          worm.H = H;
-          user.worms.push(worm);
-          user.iWorm[H] = user.worms.length - 1;
-      }{
-        worm = user.worms[user.iWorm[H]]
-      }
-
-
-      if (ended){
-        
-        worm.iSeg = 0;
-        worm.mode = "PLAYING"
-        //debugger;
-        //determine delta from the start to the end.
-        var posDelta = new THREE.Vector3();
-        var len = worm.segs.length
-        var segEnd = worm.segs[len-1]
-        var posEnd = segEnd.pos
-        posDelta.copy(posEnd);
-        posDelta.sub(worm.segs[0].pos);
-        worm.posDelta = posDelta;
-
-       
-        var qDelta = segEnd.quat.clone().invert();
-        var qStart = worm.segs[0].quat;
-        qDelta.multiply(qStart)
-        
-        worm.qDelta = qDelta;      
-      }
-
-      if (gTriggerDown[H] ){ 
-        //if (gTriggerDown[H] || gTriggerTouch[H]){ 
-
-        //if (H==0){
-            //record
-
-            if (worm.mode=="RECORDING"){
-        
-              var seg = {}
-              initSeg(seg);
-              
-              seg.pos = new THREE.Vector3()
-              seg.pos.copy(pos);
-              seg.spine = new THREE.Vector3(0, 0.15, -0.5);
-              seg.quat = new THREE.Quaternion();
-              seg.quat.copy(q);
-
-              //debugger;
-              worm.segs.push(seg);
-
-              var sceneEl = document.querySelector('a-scene');
-              var groupEl = document.createElement('a-entity');
-              sceneEl.appendChild(groupEl);
-              
-              //debugger;
-              if (worm.iSeg > 0){
-                addWormSegment(groupEl, worm, seg, user);
-              }
-              worm.iSeg++;
-              
-            }
-        //}
-        
-      }
-    }
-
-
     function animateMotes(){
 
       var user = users[clientId];
-        user.motes.forEach(mote => {
+      user.motes.forEach((mote, index) => {
+        
+        mote.vel.add(mote.accel);
         mote.pos.add(mote.vel);
+        mote.accel.multiplyScalar(0)
         mote.moteEl.setAttribute('position', mote.pos);
 
+
+        // Update Trail
+        //if (index==0){ debugger}
+        var trail = mote.trails[mote.iTrail]
+        if (!trail){
+          trail = {}
+          initTrail(trail,mote)
+          mote.trails.push(trail)
+          //if (index==0){console.log("no trail")}
+        }else{
+          //if (index==0){console.log("yes trail")}
+        }
+
+        //LINE
+        trail.pos.copy(mote.pos)
+        trail.trailEl.setAttribute('position', trail.pos);
+        var d = new THREE.Vector3();
+         const i = (mote.iTrail == 0) ? (options.TRAIL_LENGTH-1) : mote.iTrail-1
+        if (mote.trails[i]){
+          d.copy(mote.trails[i].pos)
+          d.sub(trail.pos)
+          trail.trailEl.setAttribute("line",`start: 0 0 0; end: ${d.x} ${d.y} ${d.z}; color: ${mote.color}`);
+        }
+
+        //Triangle
+
+           //setGeometry(trail.trailEl, mote.pos)
+     
+
+        
+        
+        mote.iTrail = (mote.iTrail+1) % options.TRAIL_LENGTH;
+        // if (index==0){
+        //   console.log("iTrail: " + mote.iTrail)
+        // }
+
+        // Apply forces
+        user.orbs.forEach(orb => {
+
+          var distance = mote.pos.distanceTo(orb.pos);
+          var force = new THREE.Vector3().subVectors(mote.pos, orb.pos);         // Calculate direction of force
+          var d = force.lengthSq();
+          if (d<0) d*=-1;
+          force = force.normalize();
+          var strength = - (options.G * orb.mass * mote.mass) / (d);      // Calculate gravitional force magnitude
+          force = force.multiplyScalar(strength);                             // Get force vector --> magnitude * direction
+          
+          var f = force.divideScalar(mote.mass);
+          mote.accel.add(f);
+
+        })
       })
 
     }
-
-    // function animateWorms(){
-
-    //   var user = users[clientId];
-    //   user.worms.forEach(worm => {
-    //     if (worm.mode == "PLAYING"){
-    //       const seg = worm.segs[worm.iSeg]
-    //       if (seg){
-    //         //debugger;
-    //         //const delta = new THREE.Vector3(0, 0.1, 0);
-    //         //increment!
-    //         const posDelta = worm.posDelta;
-            
-    //         seg.element && seg.element.object3D.position.add(posDelta)
-
-    //         //quat
-    //         //var qNew = seg.quat.multiply(worm.qDelta); 
-    //         var qNew = worm.qDelta; 
-    //         //seg.element && seg.element.object3D.applyQuaternion(qNew)
-
-    //       }
-          
-    //       worm.iSeg = (worm.iSeg+1) % worm.segs.length;
-    //     }
-    //   })
-
-    // }
-
-function addWormSegment(groupEl,worm, seg, user){
-
-    var newEl1 = document.createElement('a-triangle');
-    var newEl2 = document.createElement('a-triangle');
-
-    const data = {
-        color: "#ff0000",
-    }
-
-    groupEl.appendChild(newEl1);
-    groupEl.appendChild(newEl2);
-    
-    newEl1.setAttribute('material','side: double; transparent: false;')
-    newEl2.setAttribute('material','side: double; transparent: false;')
-    if (worm.H==0){
-      newEl1.setAttribute('color', "rgb(255,0,0)");
-      newEl2.setAttribute('color', "rgb(0,0,255)");
-    } else{
-      newEl1.setAttribute('color', "rgb(0,255,0)");
-      newEl2.setAttribute('color', "rgb(0,0,255)");
-    }
-    
-
-    //debugger;
-    var pos1 = seg.pos
-    var pos2 = getPosForSpine(seg.spine, seg.quat, seg.pos)
-
-    
-    if (worm.iSeg > 0){
-        var lastSeg = worm.segs[worm.iSeg-1]
-        var lastPos1 = lastSeg.pos;
-        var lastPos2 = getPosForSpine(lastSeg.spine, lastSeg.quat, lastSeg.pos)
- 
-        newEl1.setAttribute('geometry', {
-            primitive: 'triangle',
-            vertexA: lastPos1,
-            vertexB: lastPos2,
-            vertexC: pos1
-        });
-
-        newEl2.setAttribute('geometry', {
-            primitive: 'triangle',
-            vertexA: pos1,
-            vertexB: pos2,
-            vertexC: lastPos2
-        });
-
-    }
-    
-///////
-
-
-   
-
-    //Destroy old one 
-
-    if (seg.element){
-        
-        var el = seg.element;
-        el.parentNode.removeChild(el);
-    }
-
-    //and register new one
-    seg.element = groupEl;
-
-}
-
 
 
 AFRAME.registerComponent('button-listener', {
@@ -731,13 +581,12 @@ console.log("START - end of code 2")
   id="sky"
   
     renderer="colorManagement: true;"
-    cursor="rayOrigin: mouse"
-    raycaster="objects: [cube]" fog="color: #bc483e; near: 0; far: 65;"
+
     background="color: black"
     >
     <!-- avatar-recorder avatar-replayer -->
 
-    <a-entity id="sky2" cursor-listener
+    <a-entity id="sky2" 
     geometry="primitive: sphere; radius: 65;"
     material="shader: skyGradient; colorTop: #353449; colorBottom: #BC483E; side: back"></a-entity>
   
@@ -792,11 +641,7 @@ console.log("START - end of code 2")
 
 
     <a-entity position="0 1.6 2" camera look-controls wasd-controls>
-      <a-entity id="a-cursor" cursor="fuse: true; fuseTimeout: 500"
-        position="0 0 -1"
-        geometry="primitive: ring; radiusInner: 0.02; radiusOuter: 0.03"
-        material="color: black; shader: flat; visible:false;">
-      </a-entity>
+
     </a-entity>
 
   </a-scene>
