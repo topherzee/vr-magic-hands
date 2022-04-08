@@ -15,7 +15,7 @@
 //https://codepen.io/Grilly86/pen/BapwXz
 
 // GAME LOOP
-const TICKS_PER_FRAME = 100; //1000
+const TICKS_PER_FRAME = 50; //1000
 
 const VELOCITY_ON = false;
 
@@ -26,9 +26,9 @@ const MAX_FADES = 10;
 const VEL_FACTOR = 10;
 
 var options = {
-  G: 0.005,
-  TRAIL_LENGTH: 20,
-  NUM_MOTES: 60
+  G: 0.003,
+  TRAIL_LENGTH: 30,
+  NUM_MOTES: 30
 } 
 
 
@@ -83,106 +83,6 @@ function initUser(CID){
   users[CID].motes = [];
   users[CID].orbs = [];
 
-}
-
-function initOrb(orb, x, y, z){
-
-  orb.mass = 10; //kg.
-  orb.pos = new THREE.Vector3(x, y, z);
-  orb.quatDelta = null;
-
-  var orbEl = document.createElement('a-sphere');
-  orbEl.setAttribute('material','side: double; transparent: false;')
-  orbEl.setAttribute('color', "rgb(255,255,0)");
-  orbEl.setAttribute('radius', 0.5);
-  orbEl.setAttribute('position', orb.pos);
-  //orbEl.object3D.position.set(-1, 2, -3);
-
-  var sceneEl = document.querySelector('a-scene');
-  sceneEl.appendChild(orbEl);
-  //debugger;
-}
-
-
-function initMote(mote){
-    mote.mass = 0.1;
-    mote.trails = [];
-    mote.iTrail = 0;
-    mote.pos = new THREE.Vector3();
-    mote.quatDelta = null;
-
-    var SPREAD = 1
-    mote.pos.x = (Math.random()*SPREAD) - SPREAD/2
-    mote.pos.y = (Math.random()*SPREAD) - SPREAD/2
-    mote.pos.z = (Math.random()*SPREAD) - SPREAD/2
-
-    //mote.vel = new THREE.Vector3(0.01, 0, 0);
-    mote.vel = new THREE.Vector3(0.01, 0, 0);
-
-    mote.accel = new THREE.Vector3();
-    
-    const r = (Math.random()*255).toFixed(0);
-    const g = (Math.random()*255).toFixed(0);
-    const b = (Math.random()*255).toFixed(0);
-    mote.color = `rgb(${r},${g},${b})`;
-    
-    //const clientId="K" + (Math.random()*1000).toFixed(0)
-
-    //var moteEl = document.createElement('a-cube');
-    var moteEl = document.createElement('a-sphere');
-    //moteEl.setAttribute('radius', 0.05);
-    moteEl.setAttribute('radius', 0.00);
-    moteEl.setAttribute('material','side: double; transparent: false;')
-    moteEl.setAttribute('color', mote.color);
-    moteEl.setAttribute('position', mote.pos);
-
-    mote.moteEl = moteEl;
-    var sceneEl = document.querySelector('a-scene');
-    sceneEl.appendChild(moteEl);
-    //debugger;
-}
-
-
-
-function initTrail(trail, mote){
-  trail.pos = new THREE.Vector3();
-
-  var trailEl = document.createElement('a-entity');
-  trailEl.setAttribute("line","start: 0 0 0; end: 0 0.01 0; color:" + mote.color);
-  
-  // var trailEl = document.createElement('a-box');
-  // trailEl.setAttribute('radius', 0.005);
-  // trailEl.setAttribute('depth', 0.005);
-  // trailEl.setAttribute('height', 0.005);
-  // trailEl.setAttribute('width', 0.005);
-  // trailEl.setAttribute('material','side: double; transparent: false;')
-  // trailEl.setAttribute('color', "rgb(0,0,255)");
-
-  // Traiangle
-  // var trailEl = makeTrailEl(trail, mote)
-
-
-  trail.trailEl = trailEl;
-
-  var sceneEl = document.querySelector('a-scene');
-  sceneEl.appendChild(trailEl);
-}
-
-function makeTrailEl(trail, mote){
-  var trailEl = document.createElement('a-triangle');
-  trailEl.setAttribute('material','side: double; transparent: false;')
-  trailEl.setAttribute('color', mote.color);
-  setGeometry(trailEl, mote.pos)
-  return trailEl
-}
-
-function setGeometry(trailEl, pos){
-  trailEl.setAttribute('geometry', {
-      primitive: 'triangle',
-      vertexA: pos,
-      vertexB: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0.1, 0)),
-      vertexC: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0, 0.1))
-  });
 }
 
 
@@ -249,12 +149,32 @@ window.onload = function() {
     document.getElementById('hand-right').setAttribute("button-listener","hand:right")
     var myVar = setInterval(gameLoop, TICKS_PER_FRAME);
 
+    initLauncher()
     initMotes()
     initOrbs()
+
+    
   });
   console.log("STARTUP Complete")
 };
 
+function initLauncher(){
+   launcherPos = new THREE.Vector3(0.5, 1.5, 1);
+ launcherDir = new THREE.Vector3(1,0,0).setLength(0.1);
+
+  launcherEl = document.createElement('a-cylinder');
+  //moteEl.setAttribute('radius', 0.05);
+  launcherEl.setAttribute('radius', 0.05);
+  //launcherEl.setAttribute('geometry','radius-top:0.10; radius-bottom:0.50;');
+  //launcherEl.setAttribute('geometry.radiusBottom', 0.01);
+  launcherEl.setAttribute('length', 0.10);
+  launcherEl.setAttribute('material','side: double; transparent: false;')
+  launcherEl.setAttribute('color', `rgb(0,255,0)`);
+  launcherEl.setAttribute('position', launcherPos);
+  var sceneEl = document.querySelector('a-scene');
+  //sceneEl.appendChild(launcherEl);
+
+}
 function initMotes(){
   //debugger;
   var user = users[clientId];
@@ -286,87 +206,205 @@ function initOrbs(){
 }
 
 
-    function gameLoop(){
+function initOrb(orb, x, y, z){
+
+  orb.mass = 10; //kg.
+  orb.pos = new THREE.Vector3(x, y, z);
+  orb.quatDelta = null;
+
+  var orbEl = document.createElement('a-sphere');
+  orbEl.setAttribute('material','side: double; transparent: false;')
+  orbEl.setAttribute('color', "rgb(255,255,0)");
+  orbEl.setAttribute('radius', 0.5);
+  orbEl.setAttribute('position', orb.pos);
+  //orbEl.object3D.position.set(-1, 2, -3);
+
+  var sceneEl = document.querySelector('a-scene');
+  sceneEl.appendChild(orbEl);
+  //debugger;
+}
+
+var launcherPos 
+var launcherDir
+
+var launcherEl 
+
+
+function initMote(mote){
+  mote.mass = 0.1;
+  mote.trails = [];
+  mote.iTrail = 0;
+  mote.pos = new THREE.Vector3();
+  mote.quatDelta = null;
+
+  var SPREAD = 0.1
+  // mote.pos.x = 0.5 + (Math.random()*SPREAD) - SPREAD/2
+  // mote.pos.y = 1 + (Math.random()*SPREAD) - SPREAD/2
+  // mote.pos.z = -1 + (Math.random()*SPREAD) - SPREAD/2
+
+  mote.pos.x = 0.5 
+  mote.pos.y = 1 
+  mote.pos.z = -1 
+
+
+  //mote.vel = new THREE.Vector3(0.01, 0, 0);
+  //In every direction.
+  mote.vel = new THREE.Vector3().random().subScalar(0.5).setLength(0.1);
+  //angle towards 1 direction.
+  mote.vel.lerp(launcherDir, 0.7)
+
+  //mote.vel = 
+
+  mote.accel = new THREE.Vector3();
+  
+  const r = (Math.random()*255).toFixed(0);
+  const g = (Math.random()*255).toFixed(0);
+  const b = (Math.random()*255).toFixed(0);
+  mote.color = `rgb(${r},${g},${b})`;
+  
+  //const clientId="K" + (Math.random()*1000).toFixed(0)
+
+  //var moteEl = document.createElement('a-cube');
+  var moteEl = document.createElement('a-sphere');
+  //moteEl.setAttribute('radius', 0.05);
+  moteEl.setAttribute('radius', 0.00);
+  moteEl.setAttribute('material','side: double; transparent: false;')
+  moteEl.setAttribute('color', mote.color);
+  moteEl.setAttribute('position', mote.pos);
+
+  mote.moteEl = moteEl;
+  var sceneEl = document.querySelector('a-scene');
+  sceneEl.appendChild(moteEl);
+  //debugger;
+}
+
+
+
+function initTrail(trail, mote){
+trail.pos = new THREE.Vector3();
+
+var trailEl = document.createElement('a-entity');
+trailEl.setAttribute("line","start: 0 0 0; end: 0 0.01 0; color:" + mote.color);
+
+// var trailEl = document.createElement('a-box');
+// trailEl.setAttribute('radius', 0.005);
+// trailEl.setAttribute('depth', 0.005);
+// trailEl.setAttribute('height', 0.005);
+// trailEl.setAttribute('width', 0.005);
+// trailEl.setAttribute('material','side: double; transparent: false;')
+// trailEl.setAttribute('color', "rgb(0,0,255)");
+
+// Traiangle
+// var trailEl = makeTrailEl(trail, mote)
+
+
+trail.trailEl = trailEl;
+
+var sceneEl = document.querySelector('a-scene');
+sceneEl.appendChild(trailEl);
+}
+
+function makeTrailEl(trail, mote){
+var trailEl = document.createElement('a-triangle');
+trailEl.setAttribute('material','side: double; transparent: false;')
+trailEl.setAttribute('color', mote.color);
+setGeometry(trailEl, mote.pos)
+return trailEl
+}
+
+function setGeometry(trailEl, pos){
+trailEl.setAttribute('geometry', {
+    primitive: 'triangle',
+    vertexA: pos,
+    vertexB: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0.1, 0)),
+    vertexC: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0, 0.1))
+});
+}
+
+
+
+
+function gameLoop(){
+
+  animateMotes();
+
+  // gameLoop_Hand(L,"left");
+  // gameLoop_Hand(R,"right");
+
+  if (gRecordState === "RECORDING"){
+      if (aRecord[L].length === (RECORD_MAX-1)){
+      //console.log(JSON.stringify(aRecord[L],null,2));
+      console.log("RECORDING SAVED.")
+      localStorage.setItem('vr-recording-2', JSON.stringify(aRecord,null,2));
+    }
+  }
+}
+
+
+function animateMotes(){
+
+  var user = users[clientId];
+  user.motes.forEach((mote, index) => {
     
-      animateMotes();
+    mote.vel.add(mote.accel);
+    mote.pos.add(mote.vel);
+    mote.accel.multiplyScalar(0)
+    mote.moteEl.setAttribute('position', mote.pos);
 
-      // gameLoop_Hand(L,"left");
-      // gameLoop_Hand(R,"right");
 
-      if (gRecordState === "RECORDING"){
-          if (aRecord[L].length === (RECORD_MAX-1)){
-          //console.log(JSON.stringify(aRecord[L],null,2));
-          console.log("RECORDING SAVED.")
-          localStorage.setItem('vr-recording-2', JSON.stringify(aRecord,null,2));
-        }
-      }
+    // Update Trail
+    //if (index==0){ debugger}
+    var trail = mote.trails[mote.iTrail]
+    if (!trail){
+      trail = {}
+      initTrail(trail,mote)
+      mote.trails.push(trail)
+      //if (index==0){console.log("no trail")}
+    }else{
+      //if (index==0){console.log("yes trail")}
     }
 
-
-    function animateMotes(){
-
-      var user = users[clientId];
-      user.motes.forEach((mote, index) => {
-        
-        mote.vel.add(mote.accel);
-        mote.pos.add(mote.vel);
-        mote.accel.multiplyScalar(0)
-        mote.moteEl.setAttribute('position', mote.pos);
-
-
-        // Update Trail
-        //if (index==0){ debugger}
-        var trail = mote.trails[mote.iTrail]
-        if (!trail){
-          trail = {}
-          initTrail(trail,mote)
-          mote.trails.push(trail)
-          //if (index==0){console.log("no trail")}
-        }else{
-          //if (index==0){console.log("yes trail")}
-        }
-
-        //LINE
-        trail.pos.copy(mote.pos)
-        trail.trailEl.setAttribute('position', trail.pos);
-        var d = new THREE.Vector3();
-         const i = (mote.iTrail == 0) ? (options.TRAIL_LENGTH-1) : mote.iTrail-1
-        if (mote.trails[i]){
-          d.copy(mote.trails[i].pos)
-          d.sub(trail.pos)
-          trail.trailEl.setAttribute("line",`start: 0 0 0; end: ${d.x} ${d.y} ${d.z}; color: ${mote.color}`);
-        }
-
-        //Triangle
-
-           //setGeometry(trail.trailEl, mote.pos)
-     
-
-        
-        
-        mote.iTrail = (mote.iTrail+1) % options.TRAIL_LENGTH;
-        // if (index==0){
-        //   console.log("iTrail: " + mote.iTrail)
-        // }
-
-        // Apply forces
-        user.orbs.forEach(orb => {
-
-          var distance = mote.pos.distanceTo(orb.pos);
-          var force = new THREE.Vector3().subVectors(mote.pos, orb.pos);         // Calculate direction of force
-          var d = force.lengthSq();
-          if (d<0) d*=-1;
-          force = force.normalize();
-          var strength = - (options.G * orb.mass * mote.mass) / (d);      // Calculate gravitional force magnitude
-          force = force.multiplyScalar(strength);                             // Get force vector --> magnitude * direction
-          
-          var f = force.divideScalar(mote.mass);
-          mote.accel.add(f);
-
-        })
-      })
-
+    //LINE
+    trail.pos.copy(mote.pos)
+    trail.trailEl.setAttribute('position', trail.pos);
+    var d = new THREE.Vector3();
+      const i = (mote.iTrail == 0) ? (options.TRAIL_LENGTH-1) : mote.iTrail-1
+    if (mote.trails[i]){
+      d.copy(mote.trails[i].pos)
+      d.sub(trail.pos)
+      trail.trailEl.setAttribute("line",`start: 0 0 0; end: ${d.x} ${d.y} ${d.z}; color: ${mote.color}`);
     }
+
+    //Triangle
+
+        //setGeometry(trail.trailEl, mote.pos)
+  
+
+    
+    
+    mote.iTrail = (mote.iTrail+1) % options.TRAIL_LENGTH;
+    // if (index==0){
+    //   console.log("iTrail: " + mote.iTrail)
+    // }
+
+    // Apply forces
+    user.orbs.forEach(orb => {
+
+      var distance = mote.pos.distanceTo(orb.pos);
+      var force = new THREE.Vector3().subVectors(mote.pos, orb.pos);         // Calculate direction of force
+      var d = force.lengthSq();
+      if (d<0) d*=-1;
+      force = force.normalize();
+      var strength = - (options.G * orb.mass * mote.mass) / (d);      // Calculate gravitional force magnitude
+      force = force.multiplyScalar(strength);                             // Get force vector --> magnitude * direction
+      
+      var f = force.divideScalar(mote.mass);
+      mote.accel.add(f);
+
+    })
+  })
+
+}
 
 
 AFRAME.registerComponent('button-listener', {
