@@ -6,8 +6,8 @@
     <meta name="description" content="Tracked Controls – A-Frame">
 
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="components/ground.js"></script>
-    <script src="shaders/skyGradient.js"></script>
+    <!-- <script src="components/ground.js"></script> -->
+    <!-- <script src="shaders/skyGradient.js"></script> -->
 
   <script type="module">
 
@@ -15,7 +15,7 @@
 //https://codepen.io/Grilly86/pen/BapwXz
 
 // GAME LOOP
-const TICKS_PER_FRAME = 50; //1000
+const TICKS_PER_FRAME = 33; //1000
 
 const VELOCITY_ON = false;
 
@@ -27,8 +27,8 @@ const VEL_FACTOR = 10;
 
 var options = {
   G: 0.003,
-  TRAIL_LENGTH: 30,
-  NUM_MOTES: 30
+  TRAIL_LENGTH: 50,
+  NUM_MOTES: 100
 } 
 
 
@@ -144,9 +144,7 @@ window.onload = function() {
     //FIREBASE catch events. 
 
     console.log("START game loop")
-    //document.getElementById('sky').setAttribute("button-listener","hand:round")
-    document.getElementById('hand-left').setAttribute("button-listener","hand:left")
-    document.getElementById('hand-right').setAttribute("button-listener","hand:right")
+
     var myVar = setInterval(gameLoop, TICKS_PER_FRAME);
 
     initLauncher()
@@ -191,9 +189,7 @@ function initMotes(){
 function initOrbs(){
   //debugger;
   var user = users[clientId];
-  //user.motes.forEach(mote => {
 
-  // for (var i=0; i<NUM_MOTES; i++){
       var orb = {};
       initOrb(orb,-1, 2, -3)
       user.orbs.push(orb)
@@ -201,7 +197,7 @@ function initOrbs(){
       var orb2 = {};
       initOrb(orb2,1, 2, -4)
       user.orbs.push(orb2)
-  // }
+ 
 
 }
 
@@ -251,7 +247,7 @@ function initMote(mote){
   //In every direction.
   mote.vel = new THREE.Vector3().random().subScalar(0.5).setLength(0.1);
   //angle towards 1 direction.
-  mote.vel.lerp(launcherDir, 0.7)
+  mote.vel.lerp(launcherDir, 0.7).setLength(0.005)
 
   //mote.vel = 
 
@@ -265,17 +261,17 @@ function initMote(mote){
   //const clientId="K" + (Math.random()*1000).toFixed(0)
 
   //var moteEl = document.createElement('a-cube');
-  var moteEl = document.createElement('a-sphere');
-  //moteEl.setAttribute('radius', 0.05);
-  moteEl.setAttribute('radius', 0.00);
-  moteEl.setAttribute('material','side: double; transparent: false;')
-  moteEl.setAttribute('color', mote.color);
-  moteEl.setAttribute('position', mote.pos);
+  // var moteEl = document.createElement('a-sphere');
+  // //moteEl.setAttribute('radius', 0.05);
+  // moteEl.setAttribute('radius', 0.00);
+  // moteEl.setAttribute('material','side: double; transparent: false;')
+  // moteEl.setAttribute('color', mote.color);
+  // moteEl.setAttribute('position', mote.pos);
 
-  mote.moteEl = moteEl;
-  var sceneEl = document.querySelector('a-scene');
-  sceneEl.appendChild(moteEl);
-  //debugger;
+  // mote.moteEl = moteEl;
+  // var sceneEl = document.querySelector('a-scene');
+  // sceneEl.appendChild(moteEl);
+ 
 }
 
 
@@ -304,27 +300,31 @@ var sceneEl = document.querySelector('a-scene');
 sceneEl.appendChild(trailEl);
 }
 
-function makeTrailEl(trail, mote){
-var trailEl = document.createElement('a-triangle');
-trailEl.setAttribute('material','side: double; transparent: false;')
-trailEl.setAttribute('color', mote.color);
-setGeometry(trailEl, mote.pos)
-return trailEl
-}
+// function makeTrailEl(trail, mote){
+// var trailEl = document.createElement('a-triangle');
+// trailEl.setAttribute('material','side: double; transparent: false;')
+// trailEl.setAttribute('color', mote.color);
+// setGeometry(trailEl, mote.pos)
+// return trailEl
+// }
 
-function setGeometry(trailEl, pos){
-trailEl.setAttribute('geometry', {
-    primitive: 'triangle',
-    vertexA: pos,
-    vertexB: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0.1, 0)),
-    vertexC: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0, 0.1))
-});
-}
-
-
+// function setGeometry(trailEl, pos){
+// trailEl.setAttribute('geometry', {
+//     primitive: 'triangle',
+//     vertexA: pos,
+//     vertexB: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0.1, 0)),
+//     vertexC: new THREE.Vector3().copy(pos).add(new THREE.Vector3(0, 0, 0.1))
+// });
+// }
 
 
+
+var loopCount = 0;
 function gameLoop(){
+  loopCount++;
+  if (loopCount > 100){
+    return
+  }
 
   animateMotes();
 
@@ -343,13 +343,15 @@ function gameLoop(){
 
 function animateMotes(){
 
+  var d = new THREE.Vector3();
+
   var user = users[clientId];
   user.motes.forEach((mote, index) => {
     
     mote.vel.add(mote.accel);
     mote.pos.add(mote.vel);
     mote.accel.multiplyScalar(0)
-    mote.moteEl.setAttribute('position', mote.pos);
+   // mote.moteEl.setAttribute('position', mote.pos);
 
 
     // Update Trail
@@ -367,7 +369,7 @@ function animateMotes(){
     //LINE
     trail.pos.copy(mote.pos)
     trail.trailEl.setAttribute('position', trail.pos);
-    var d = new THREE.Vector3();
+    
       const i = (mote.iTrail == 0) ? (options.TRAIL_LENGTH-1) : mote.iTrail-1
     if (mote.trails[i]){
       d.copy(mote.trails[i].pos)
@@ -375,237 +377,27 @@ function animateMotes(){
       trail.trailEl.setAttribute("line",`start: 0 0 0; end: ${d.x} ${d.y} ${d.z}; color: ${mote.color}`);
     }
 
-    //Triangle
 
-        //setGeometry(trail.trailEl, mote.pos)
-  
-
-    
-    
     mote.iTrail = (mote.iTrail+1) % options.TRAIL_LENGTH;
-    // if (index==0){
-    //   console.log("iTrail: " + mote.iTrail)
-    // }
 
     // Apply forces
-    user.orbs.forEach(orb => {
+    // user.orbs.forEach(orb => {
 
-      var distance = mote.pos.distanceTo(orb.pos);
-      var force = new THREE.Vector3().subVectors(mote.pos, orb.pos);         // Calculate direction of force
-      var d = force.lengthSq();
-      if (d<0) d*=-1;
-      force = force.normalize();
-      var strength = - (options.G * orb.mass * mote.mass) / (d);      // Calculate gravitional force magnitude
-      force = force.multiplyScalar(strength);                             // Get force vector --> magnitude * direction
+    //   var distance = mote.pos.distanceTo(orb.pos);
+    //   var force = new THREE.Vector3().subVectors(mote.pos, orb.pos);         // Calculate direction of force
+    //   var d = force.lengthSq();
+    //   if (d<0) d*=-1;
+    //   force = force.normalize();
+    //   var strength = - (options.G * orb.mass * mote.mass) / (d);      // Calculate gravitional force magnitude
+    //   force = force.multiplyScalar(strength);                             // Get force vector --> magnitude * direction
       
-      var f = force.divideScalar(mote.mass);
-      mote.accel.add(f);
+    //   var f = force.divideScalar(mote.mass);
+    //   mote.accel.add(f);
 
-    })
+    // })
   })
 
 }
-
-
-AFRAME.registerComponent('button-listener', {
-
-schema:{
-  hand: {type: 'string'}
-},
-
-tick: function (){
-
-},
-
-init: function () {
-  console.log(`button-listener - init`)
-
-  var el = this.el;
-  var H;
-  var hand = this.data.hand;
-  if (this.data.hand==="left"){
-    H = 0;
-  }else{
-    H = 1;
-  }
-
-  this.recordEvent = this.recordEvent.bind(this);
-
-  
-
-  el.addEventListener('xbuttondown', function (evt) {
-    gAX_Down[H] = true;
-  });
-  el.addEventListener('xbuttonup', function (evt) {
-    gAX_Down[H] = false;
-  });
-  el.addEventListener('abuttondown', function (evt) {
-    gAX_Down[H] = true;
-  });
-  el.addEventListener('abuttonup', function (evt) {
-    gAX_Down[H] = false;
-  });
-
-  el.addEventListener('ybuttondown', function (evt) {
-    gBY_Down[H] = true;
-  });
-  el.addEventListener('ybuttonup', function (evt) {
-    gBY_Down[H] = false;
-  });
-  el.addEventListener('bbuttondown', function (evt) {
-    gBY_Down[H] = true;
-  });
-  el.addEventListener('bbuttonup', function (evt) {
-    gBY_Down[H] = false;
-  });
-
-  el.addEventListener('triggerdown', function (evt) {
-    gTriggerDown[H] = true;
-    console.log("trigger down:" + H)
-  });        
-  el.addEventListener('triggerup', function (evt) {
-    gTriggerDown[H] = false;
-    gDrawing[H] = false;
-
-    // var iWorm = users[CID].iWorm
-    // users[clientId].aWorms[iWorm] = users[clientId].aParts[H].slice()
-    // users[CID].iWorm++;
-
-    // // reset user
-    // users[clientId].aParts[H] = []
-    // users[clientId].iPart[H] = 0;
-
-  });
-
-  el.addEventListener('triggertouchstart', function (evt) {
-    gTriggerTouch[H] = true;
-  });        
-  el.addEventListener('triggertouchend', function (evt) {
-    gTriggerTouch[H] = false;
-  });
-
-  el.addEventListener('gripdown', function (evt) {
-    gGripDown[H] = true;
-    if (ENABLE_BEATS){
-      setBeat();
-    }
-  });        
-  el.addEventListener('gripup', function (evt) {
-    gGripDown[H] = false;
-  });
-
-  el.addEventListener('thumbsticktouchstart', function (evt) {
-    var thumb = document.querySelector("#thumb-control-" + hand);
-    //thumb.setAttribute("visible","true")
-  });        
-  el.addEventListener('thumbsticktouchend', function (evt) {
-    var thumb = document.querySelector("#thumb-control-" + hand);
-    //thumb.setAttribute("visible","false")
-  });
-
-  el.addEventListener('thumbstickmoved', this.recordEvent);
-  el.addEventListener('buttondown', this.recordEvent);
-
-
-  el.addEventListener('thumbstickmoved', function (evt) {
-    console.log('thumbstickmoved')
-    
-    // if (!gThumbSpent[H]){
-    //   if (evt.detail.y > 0.65) { //DOWN
-    //     incrementSize(H, -1); 
-    //     gThumbSpent[H] = true;
-    //   }
-    //   if (evt.detail.y < -0.65) {  //UP
-    //     incrementSize(H, 1); 
-    //     gThumbSpent[H] = true;
-    //   }
-    //   if (evt.detail.x < -0.65) { //LEFT
-    //       incrementColor(H, gColorIndex[H], -1); 
-    //       gThumbSpent[H] = true;
-    //   }
-    //   if (evt.detail.x > 0.65) { //RIGHT
-    //       incrementColor(H, gColorIndex[H], 1); 
-    //       gThumbSpent[H] = true;
-    //   }
-    // }//if
-
-    if (Math.abs(evt.detail.x) < 0.4 && Math.abs(evt.detail.y) < 0.4){
-      gThumbSpent[H] = false;
-    }
-  });
-
-},
-
-
-recordEvent: function (evt) {
-  var detail;
-
-  var H;
-  if (this.data.hand==="left"){
-    H = 0;
-  }else{
-    H = 1;
-  }
-
-  //debugger;
-
-  if (gRecordState != "RECORDING"){ return;}
-  // if (!this.isRecording) { return; }
-
-  // Filter out `target`, not serializable.
-  if ('detail' in evt && 'state' in evt.detail && typeof evt.detail.state === 'object' &&
-      'target' in evt.detail.state) {
-    delete evt.detail.state.target;
-  }
-
-  detail = {};
-  EVENTS[evt.type].props.forEach(function buildDetail (propName) {
-    // Convert GamepadButton to normal JS object.
-    if (propName === 'state') {
-      var stateProp;
-      detail.state = {};
-      for (stateProp in evt.detail.state) {
-        detail.state[stateProp] = evt.detail.state[stateProp];
-      }
-      return;
-    }
-    detail[propName] = evt.detail[propName];
-  });
-
-  gRecordedEvents[H].push({
-    name: evt.type,
-    detail: detail,
-    timestamp: this.lastTimestamp
-  });
-},   
-
-});
-
-var gRecordedEvents = [];
-gRecordedEvents[L] = [];
-gRecordedEvents[R] = [];
-
-var EVENTS = {
-  axismove: {id: 0, props: ['id', 'axis', 'changed']},
-  buttonchanged: {id: 1, props: ['id', 'state']},
-  buttondown: {id: 2, props: ['id', 'state']},
-  buttonup: {id: 3, props: ['id', 'state']},
-  touchstart: {id: 4, props: ['id', 'state']},
-  touchend: {id: 5, props: ['id', 'state']},
-
-  thumbstickmoved: {id: 6, props: ['x', 'y']},
-};
-
-var EVENTS_DECODE = {
-  0: 'axismove',
-  1: 'buttonchanged',
-  2: 'buttondown',
-  3: 'buttonup',
-  4: 'touchstart',
-  5: 'touchend',
-
-  6: 'thumbstickmoved',
-};
 
 
 
@@ -618,65 +410,38 @@ console.log("START - end of code 2")
   <a-scene
   id="sky"
   
-    renderer="colorManagement: true;"
+  
 
     background="color: black"
     >
     <!-- avatar-recorder avatar-replayer -->
 
+      <!-- renderer="colorManagement: true;" -->
+
     <a-entity id="sky2" 
     geometry="primitive: sphere; radius: 65;"
-    material="shader: skyGradient; colorTop: #353449; colorBottom: #BC483E; side: back"></a-entity>
+    material="colorTop: #353449; colorBottom: #BC483E; side: back"></a-entity>
   
 
     <!-- Hands -->
 
-    <a-entity  oculus-touch-controls="hand: left; model:true" id="hand-left" >
-      <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
+    <!-- <a-entity  oculus-touch-controls="hand: left; model:true" id="hand-left" >
       <a-entity id="glowstick-left-tip" position="0 0.15 -0.5" rotation="0 0 0" material="visible:true; shader: flat; color: green;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
       <a-entity id="origin-left" position="0 0 0" rotation="40 0 0" material="visible:true; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
     </a-entity>
-    <!-- button-listener="hand:right;" -->
+   
     <a-entity  oculus-touch-controls="hand: right; model:true" id="hand-right"  >
-      <a-entity light="type: point; color: #ffffff; intensity: 0.5; distance: 10; decay: 5;" position="0 0 0"></a-entity>
       <a-entity id="glowstick-right-tip" position="0 0.15 -0.5" rotation="0 0 0" material="visible:true; shader:flat; color: yellow;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
       <a-entity id="origin-right" position="0 0 0" rotation="40 0 0" material="visible:true; shader: flat; color: grey;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
-    </a-entity>
+    </a-entity> -->
 
       <a-entity id="quat-left" position="0 1 -1" material="visible:true; color: red;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
     
       <a-entity id="quat-right" position="0 1 -1" material="visible:true; color: blue;" geometry="primitive: box; height: 0.03; width: 0.03; depth: 0.03"></a-entity>
 
-
-
-    <a-assets>
-      <a-asset-item id="ground" src="https://cdn.aframe.io/examples/tracked-controls/ground.glb"></a-asset-item>
-
-      <a-mixin id="cube"
-                geometry="primitive: box; height: 0.30; width: 0.30; depth: 0.30"
-                material="color: #EF2DFF;"></a-mixin>
-    </a-assets>
-
-
-
-
-
-  
     <a-entity position="0 0 -0.5">
-
-      <a-entity id="marker"  class="cube" mixin="cube" position="0 1.95 0" material="color: #999999;visible:false;"></a-entity>
-
-      <!-- <a-plane id="ground" material="shader: flat;" color="#000" rotation="-90 0 0" height="10" width="10"></a-plane> -->
-      <a-entity ground ></a-entity>
-
-      <a-entity light="type: point; color: #f4f4f4; intensity: 0.1; distance: 0" position="-2.5 1.2 2.2"></a-entity>
-        <a-entity light="type: point; color: #f4f4f4; intensity: 0.1; distance: 0" position="-20 -7 -40"></a-entity>
-        <a-entity light="type: ambient; color: #f4f4f4; intensity: 0.25;" position="-8 10 -18"></a-entity>
-    </a-entity>
-
-
-
-
+      
+      </a-entity>
 
     <a-entity position="0 1.6 2" camera look-controls wasd-controls>
 
