@@ -381,20 +381,20 @@ function animateMotes(){
     mote.iTrail = (mote.iTrail+1) % options.TRAIL_LENGTH;
 
     // Apply forces
-    // user.orbs.forEach(orb => {
+    user.orbs.forEach(orb => {
 
-    //   var distance = mote.pos.distanceTo(orb.pos);
-    //   var force = new THREE.Vector3().subVectors(mote.pos, orb.pos);         // Calculate direction of force
-    //   var d = force.lengthSq();
-    //   if (d<0) d*=-1;
-    //   force = force.normalize();
-    //   var strength = - (options.G * orb.mass * mote.mass) / (d);      // Calculate gravitional force magnitude
-    //   force = force.multiplyScalar(strength);                             // Get force vector --> magnitude * direction
+      var distance = mote.pos.distanceTo(orb.pos);
+      var force = new THREE.Vector3().subVectors(mote.pos, orb.pos);         // Calculate direction of force
+      var d = force.lengthSq();
+      if (d<0) d*=-1;
+      force = force.normalize();
+      var strength = - (options.G * orb.mass * mote.mass) / (d);      // Calculate gravitional force magnitude
+      force = force.multiplyScalar(strength);                             // Get force vector --> magnitude * direction
       
-    //   var f = force.divideScalar(mote.mass);
-    //   mote.accel.add(f);
+      var f = force.divideScalar(mote.mass);
+      mote.accel.add(f);
 
-    // })
+    })
   })
 
 }

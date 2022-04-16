@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+
+        <title>Babylon.js sample code</title>
+
+        <!-- Babylon.js -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
+        <script src="https://assets.babylonjs.com/generated/Assets.js"></script>
+        <script src="https://preview.babylonjs.com/ammo.js"></script>
+        <script src="https://preview.babylonjs.com/cannon.js"></script>
+        <script src="https://preview.babylonjs.com/Oimo.js"></script>
+        <script src="https://preview.babylonjs.com/earcut.min.js"></script>
+        <script src="https://preview.babylonjs.com/babylon.js"></script>
+        <script src="https://preview.babylonjs.com/materialsLibrary/babylonjs.materials.min.js"></script>
+        <script src="https://preview.babylonjs.com/proceduralTexturesLibrary/babylonjs.proceduralTextures.min.js"></script>
+        <script src="https://preview.babylonjs.com/postProcessesLibrary/babylonjs.postProcess.min.js"></script>
+        <script src="https://preview.babylonjs.com/loaders/babylonjs.loaders.js"></script>
+        <script src="https://preview.babylonjs.com/serializers/babylonjs.serializers.min.js"></script>
+        <script src="https://preview.babylonjs.com/gui/babylon.gui.min.js"></script>
+        <script src="https://preview.babylonjs.com/inspector/babylon.inspector.bundle.js"></script>
+
+        <style>
+            html, body {
+                overflow: hidden;
+                width: 100%;
+                height: 100%;
+                margin: 0;
+                padding: 0;
+            }
+
+            #renderCanvas {
+                width: 100%;
+                height: 100%;
+                touch-action: none;
+            }
+        </style>
+    </head>
+<body>
+    <canvas id="renderCanvas"></canvas>
+    <script>
+
+
+var towerMeshes = [];
+var trailMeshes = [];
+var obstacles = [];
+
+var canvas = document.getElementById("renderCanvas");
+
+var startRenderLoop = function (engine, canvas) {
+    engine.runRenderLoop(function () {
+        if (sceneToRender && sceneToRender.activeCamera) {
+            sceneToRender.render();
+        }
+    });
+}
+
+var engine = null;
+var scene = null;
+var sceneToRender = null;
+var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
+/**
+ * Physics WebXR playground.
+ * Objects can be picked using the squeeze button of the left controller (if available) and can be thrown.
+ * The left trigger resets the scene, right trigger shoots a bullet straight.
+ * 
+ * Both hands and the headset have impostors, so you can touch the objects, move them, headbutt them.
+ * 
+ * Use the boxing area in the center to understand how the hand and head impostors work.
+ * 
+ * Created by Raanan Weber (@RaananW)
+ */
+
+var createScene = async function () {
+
+    // This creates a basic Babylon Scene object (non-mesh)
+    var scene = new BABYLON.Scene(engine);
+    const gravityVector = new BABYLON.Vector3(0, -9.8, 0);
+    const physicsPlugin = new BABYLON.CannonJSPlugin();
+    scene.enablePhysics(gravityVector, physicsPlugin);
+
+    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 2, 0), scene);
+    camera.setTarget(new BABYLON.Vector3(0, 4, 400));
+    camera.attachControl(canvas, true);
+
+    var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+    light.intensity = 0.7;
+
+    var environment = scene.createDefaultEnvironment({ createGround: false, skyboxSize: 1000 });
+    //environment.setMainColor(BABYLON.Color3.FromHexString("#74b9ff"));
+    environment.setMainColor(new BABYLON.Color3(0.01, 0.01, 0.01));
+
+
+    var ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 1000, height: 1000 }, scene);
+    ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.8, restitution: 0.5, disableBidirectionalTransformation: true }, scene);
+    ground.checkCollisions = true;
+    ground.material = new BABYLON.GridMaterial("mat", scene);
+
+        // Set up new rendering pipeline
+    // var pipeline = new BABYLON.DefaultRenderingPipeline("default", true, scene, [camera]);
+    // scene.imageProcessingConfiguration.toneMappingEnabled = true;
+    // scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
+    // scene.imageProcessingConfiguration.exposure = 3;
+    // pipeline.glowLayerEnabled = true
+    // pipeline.glowLayer.intensity = 0.9
+    var gl = new BABYLON.GlowLayer("glow", scene);
+    
+    
+// Load assets
+//var assets = await loadMeshes(scene);
+
+    const Rnd = function(){
+        return (Math.random()-0.5) * 2;
+    }
+
+    var materialTarget = new BABYLON.StandardMaterial("amiga", scene);
+    materialTarget.emissiveColor = new BABYLON.Color3(0.4, 0.4, 0.0);
+
+
+
+    var target = BABYLON.MeshBuilder.CreateBox("Target",
+                { width: 1, height: 1, depth: 5 }, scene);
+        target.material = materialTarget;
+        target.position = new BABYLON.Vector3(-2,3,7);
+        target.mass = 1;
+
+        var obstacle1 = BABYLON.MeshBuilder.CreateBox("Obstacle1",
+                { width: 1, height: 1, depth: 1 }, scene);
+        obstacle1.position = new BABYLON.Vector3(0,3,7);
+        obstacles.push(obstacle1)
+
+        var obstacle2 = BABYLON.MeshBuilder.CreateBox("Obstacle2",
+                { width: 1, height: 1, depth: 1 }, scene);
+        obstacle2.position = new BABYLON.Vector3(0,5,7);
+        obstacles.push(obstacle2)
+        
+
+    const startSim = function(){
+
+
+
+            // towers
+
+    console.log("motes: " + towerMeshes.length)
+    
+    towerMeshes.forEach((mote, index) => {
+        scene.removeMesh(mote);
+        mote.dispose();
+    })
+    towerMeshes = [];
+
+    trailMeshes.forEach((mote, index) => {
+        scene.removeMesh(mote);
+        mote.dispose();
+    })
+    trailMeshes = [];
+
+    for (var x = 0; x < 5; x++) {
+    for (var z = 0; z < 5; z++) {
+        var box1 = BABYLON.MeshBuilder.CreateBox("mote " + x + " " + z,
+            { width: 0.1, height: 0.1, depth: 0.1 }, scene);
+        
+        //     box1.position.x = x 
+        // box1.position.y = 2 + z;
+        // box1.position.z = 10;
+
+        //     var vel = new BABYLON.Vector3(0.01, 0.0, 0);
+        
+
+        // box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1,
+        //     BABYLON.PhysicsImpostor.BoxImpostor,
+        //     { mass: 1, friction: 0.5, restitution: 0 }, scene);
+
+        //var accel = new BABYLON.Vector3(0, 0, 0);
+        
+
+        box1.position.set(-1, 2, 8)
+
+        var vel = new BABYLON.Vector3(Rnd(), Rnd(), Rnd()).normalize();
+        const V = 0.05;
+        vel = vel.multiplyByFloats(V, V, V);
+        box1.vel = vel;
+
+        var launcherDir = new BABYLON.Vector3(0,V,0)
+        //mote.vel.lerp(launcherDir, 0.7).setLength(0.005)
+        box1.vel = BABYLON.Vector3.Lerp(launcherDir, box1.vel, 0.1)
+
+        var accel = new BABYLON.Vector3(0, 0, 0);
+
+
+        box1.accel = accel;
+        box1.mass = 0.5;
+
+
+        //https://playground.babylonjs.com/#1F4UET#33
+        //https://doc.babylonjs.com/divingDeeper/mesh/trailMesh
+
+
+        var trail = new BABYLON.TrailMesh('orb trail', box1, scene, 0.05, 200, true);
+        
+        var sourceMat = new BABYLON.StandardMaterial('sourceMat', scene);
+        //var color = new BABYLON.Color3.Red();
+        var color = new BABYLON.Color3(Math.random(),Math.random(),Math.random());
+        sourceMat.emissiveColor =
+        sourceMat.diffuseColor = color;
+        sourceMat.specularColor = new BABYLON.Color3.Black();
+        // assets.lights[i].diffuse = color.scale(0.5);
+        // assets.lights[i].specular = color.scale(0.5);
+        trail.material = sourceMat;
+
+        gl.addIncludedOnlyMesh(trail);
+        //gl.addIncludedOnlyMesh(box1)
+        trailMeshes.push(trail);
+
+        box1.trail = trail;
+        towerMeshes.push(box1);
+        box1.simulating = true;
+
+        //debugger;
+
+        box1.actionManager = new BABYLON.ActionManager(scene);
+        box1.actionManager.registerAction(
+            new BABYLON.ExecuteCodeAction(
+                {
+                    trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
+                    parameter: target,
+                },
+                (event) => {
+                    //this.mesh.position.copyFrom(this._lastGroundPos); // need to use copy or else they will be both pointing at the same thing & update together
+                    //console.log("collision:" + event.source.name)
+            
+
+                    // scene.removeMesh(event.source.trail);
+                    // (event.source.trail).dispose()
+
+                    // scene.removeMesh(event.source);
+                    // (event.source).dispose()
+                    // event.source = null;
+                    event.source.simulating = false;
+                    event.source.vel.set(0, 0, 0);
+
+                },
+            ),
+        );
+
+        obstacles.forEach((obstacle, index) => {
+           
+        
+            box1.actionManager.registerAction(
+                new BABYLON.ExecuteCodeAction(
+                    {
+                        trigger: BABYLON.ActionManager.OnIntersectionEnterTrigger,
+                        parameter: obstacle,
+                    },
+                    (event) => {
+                        //this.mesh.position.copyFrom(this._lastGroundPos); // need to use copy or else they will be both pointing at the same thing & update together
+                        console.log("obstacle:" + event.source.name)
+                        event.source.simulating = false;
+                        event.source.vel.set(0, 0, 0);
+                    },
+                ),
+            );
+        })
+
+
+        }
+    }
+}
+    
+
+//grav
+
+var materialAmiga = new BABYLON.StandardMaterial("amiga", scene);
+//materialAmiga.diffuseTexture = new BABYLON.Texture("/textures/amiga.jpg", scene);
+materialAmiga.emissiveColor = new BABYLON.Color3(0.8, 0.8, 0.2);
+// materialAmiga.diffuseTexture.uScale = 5;
+// materialAmiga.diffuseTexture.vScale = 5;
+
+var orbs = [];
+for (var x = 0; x < 2; x++) {
+
+    var orb = BABYLON.Mesh.CreateSphere("Orb1", 16, 0.5, scene);
+    //orb.material = materialAmiga;
+    orb.material = materialAmiga;
+    orb.position = new BABYLON.Vector3(-3 + 4 * x, 4+x, 7);
+    orb.mass = 1;
+
+    //gl.addIncludedOnlyMesh(orb)
+
+    orbs.push(orb)
+}
+
+    
+        
+
+
+
+// enable xr
+const xr = await scene.createDefaultXRExperienceAsync({
+    floorMeshes: [ground]
+});
+
+// enable physics
+const xrPhysics = xr.baseExperience.featuresManager.enableFeature(BABYLON.WebXRFeatureName.PHYSICS_CONTROLLERS, "latest", {
+    xrInput: xr.input,
+    physicsProperties: {
+        restitution: 0.5,
+        impostorSize: 0.1,
+        impostorType: BABYLON.PhysicsImpostor.BoxImpostor
+    },
+    enableHeadsetImpostor: true
+});
+
+var options = {G: 0.01};
+
+scene.registerBeforeRender(function () {
+    //Your code here
+    //orb.position.x += 0.05;
+
+    towerMeshes.forEach((mote, index) => {
+
+        if (mote.simulating){
+
+        
+            mote.vel.addInPlace(mote.accel);
+            mote.position.addInPlace(mote.vel);
+            mote.accel.set(0,0,0)
+
+            //determine acceleration based on orb.
+            orbs.forEach((orb, index) => {
+                var distance = BABYLON.Vector3.Distance(mote.position, orb.position);
+                var force = mote.position.subtract(orb.position);         // Calculate direction of force
+                //debugger;
+                var d = force.lengthSquared();
+                if (d<0) d*=-1;
+                force.normalize();
+                var strength = - (options.G * orb.mass * mote.mass) / (d);      // Calculate gravitional force magnitude
+                force = force.multiplyByFloats(strength, strength, strength);                             // Get force vector --> magnitude * direction
+                
+                force.divideInPlace(new BABYLON.Vector3(mote.mass, mote.mass, mote.mass) );
+                mote.accel.addInPlace(force);
+                //debugger;
+                // if (index == 0){
+                //     console.log(`d.x:${distance.x} force.x:${force.x}`)
+                // }
+            });
+        }
+
+    });
+});
+
+scene.onPointerDown = function (event, pickResult){
+    //left mouse click
+    if(event.button == 0){
+        startSim()
+        //return scene;
+    };
+//right
+    if(event.button == 1){
+        //startSim()
+        //return scene;
+    };
+    console.log("Mouse down")
+}
+
+
+
+
+xr.input.onControllerAddedObservable.add((controller) => {
+    controller.onMotionControllerInitObservable.add((motionController) => {
+        
+    if (motionController.handness === 'left') {
+            const xr_ids = motionController.getComponentIds();
+            
+            let triggerComponent = motionController.getComponent(xr_ids[0]);//xr-standard-trigger
+            triggerComponent.onButtonStateChangedObservable.add(() => {
+                if (triggerComponent.pressed) {
+                    //Box_Left_Trigger.scaling= new BABYLON.Vector3(1.2,1.2,1.2);
+                    startSim()
+                }else{
+                    //Box_Left_Trigger.scaling= new BABYLON.Vector3(1,1,1);
+                
+                }
+            });
+            
+        }
+
+    })
+
+});
+
+
+
+
+
+
+
+    return scene;
+};
+
+
+window.initFunction = async function() {
+    
+    
+    var asyncEngineCreation = async function() {
+        try {
+        return createDefaultEngine();
+        } catch(e) {
+        console.log("the available createEngine function failed. Creating the default engine instead");
+        return createDefaultEngine();
+        }
+    }
+
+    window.engine = await asyncEngineCreation();
+if (!engine) throw 'engine should not be null.';
+    startRenderLoop(engine, canvas);
+    window.scene = createScene();};
+    initFunction().then(() => {scene.then(returnedScene => { sceneToRender = returnedScene; });
+                        
+});
+
+// Resize
+window.addEventListener("resize", function () {
+    engine.resize();
+});
+    </script>
+</body>
+</html>
