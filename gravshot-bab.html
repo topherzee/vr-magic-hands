@@ -46,6 +46,60 @@ var towerMeshes = [];
 var trailMeshes = [];
 var obstacles = [];
 
+
+var level ={
+    cannon: {
+        x: -1,
+        y: 0.5,
+        z: 4
+    }, 
+    target: {
+        x: -2,
+        y: 1,
+        z: 7,
+        width:1,
+        height:1,
+        depth: 5
+    }, 
+    obstacles: [
+        {
+            x: 0,
+            y: 3,
+            z: 7,
+            width:1,
+            height:1,
+            depth:1
+        },
+        {
+            x: 0,
+            y: 5,
+            z: 7,
+            width:1,
+            height:1,
+            depth:1
+        }
+    ],
+    orbs: [
+        {
+            x: 0,
+            y: 4,
+            z: 7,
+
+        },
+        {
+            x: 4,
+            y: 5,
+            z: 7,
+        }
+    ],
+}
+
+
+
+
+
+var cannonPos = new BABYLON.Vector3(level.cannon.x,level.cannon.y, level.cannon.z )
+
 var canvas = document.getElementById("renderCanvas");
 
 var startRenderLoop = function (engine, canvas) {
@@ -72,6 +126,8 @@ var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, {
  * Created by Raanan Weber (@RaananW)
  */
 
+
+
 var createScene = async function () {
 
     // This creates a basic Babylon Scene object (non-mesh)
@@ -90,6 +146,7 @@ var createScene = async function () {
     var environment = scene.createDefaultEnvironment({ createGround: false, skyboxSize: 1000 });
     //environment.setMainColor(BABYLON.Color3.FromHexString("#74b9ff"));
     environment.setMainColor(new BABYLON.Color3(0.01, 0.01, 0.01));
+    var skyBox = scene.getNodeByName("BackgroundSkybox")
 
 
     var ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 1000, height: 1000 }, scene);
@@ -97,18 +154,7 @@ var createScene = async function () {
     ground.checkCollisions = true;
     ground.material = new BABYLON.GridMaterial("mat", scene);
 
-        // Set up new rendering pipeline
-    // var pipeline = new BABYLON.DefaultRenderingPipeline("default", true, scene, [camera]);
-    // scene.imageProcessingConfiguration.toneMappingEnabled = true;
-    // scene.imageProcessingConfiguration.toneMappingType = BABYLON.ImageProcessingConfiguration.TONEMAPPING_ACES;
-    // scene.imageProcessingConfiguration.exposure = 3;
-    // pipeline.glowLayerEnabled = true
-    // pipeline.glowLayer.intensity = 0.9
     var gl = new BABYLON.GlowLayer("glow", scene);
-    
-    
-// Load assets
-//var assets = await loadMeshes(scene);
 
     const Rnd = function(){
         return (Math.random()-0.5) * 2;
@@ -116,25 +162,23 @@ var createScene = async function () {
 
     var materialTarget = new BABYLON.StandardMaterial("amiga", scene);
     materialTarget.emissiveColor = new BABYLON.Color3(0.4, 0.4, 0.0);
-
-
-
+    var t = level.target;
     var target = BABYLON.MeshBuilder.CreateBox("Target",
-                { width: 1, height: 1, depth: 5 }, scene);
-        target.material = materialTarget;
-        target.position = new BABYLON.Vector3(-2,3,7);
-        target.mass = 1;
+                { width: t.width, height: t.height, depth: t.depth }, scene);
+    target.material = materialTarget;
+    target.position = new BABYLON.Vector3(t.x, t.y, t.z);
+    target.mass = 1;
 
-        var obstacle1 = BABYLON.MeshBuilder.CreateBox("Obstacle1",
-                { width: 1, height: 1, depth: 1 }, scene);
-        obstacle1.position = new BABYLON.Vector3(0,3,7);
-        obstacles.push(obstacle1)
 
-        var obstacle2 = BABYLON.MeshBuilder.CreateBox("Obstacle2",
-                { width: 1, height: 1, depth: 1 }, scene);
-        obstacle2.position = new BABYLON.Vector3(0,5,7);
-        obstacles.push(obstacle2)
-        
+    //var o = level.obstacles[0];
+    level.obstacles.forEach((o, index) => {
+        var obstacle = BABYLON.MeshBuilder.CreateBox("Obstacle_" + index,
+            { width: o.width, height: o.height, depth: o.depth }, scene);
+        obstacle.position = new BABYLON.Vector3(o.x, o.y, o.z);
+        obstacles.push(obstacle)
+
+    });
+
 
     const startSim = function(){
 
@@ -161,21 +205,7 @@ var createScene = async function () {
         var box1 = BABYLON.MeshBuilder.CreateBox("mote " + x + " " + z,
             { width: 0.1, height: 0.1, depth: 0.1 }, scene);
         
-        //     box1.position.x = x 
-        // box1.position.y = 2 + z;
-        // box1.position.z = 10;
-
-        //     var vel = new BABYLON.Vector3(0.01, 0.0, 0);
-        
-
-        // box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1,
-        //     BABYLON.PhysicsImpostor.BoxImpostor,
-        //     { mass: 1, friction: 0.5, restitution: 0 }, scene);
-
-        //var accel = new BABYLON.Vector3(0, 0, 0);
-        
-
-        box1.position.set(-1, 2, 8)
+        box1.position.copyFrom(cannonPos)
 
         var vel = new BABYLON.Vector3(Rnd(), Rnd(), Rnd()).normalize();
         const V = 0.05;
@@ -187,7 +217,6 @@ var createScene = async function () {
         box1.vel = BABYLON.Vector3.Lerp(launcherDir, box1.vel, 0.1)
 
         var accel = new BABYLON.Vector3(0, 0, 0);
-
 
         box1.accel = accel;
         box1.mass = 0.5;
@@ -227,26 +256,12 @@ var createScene = async function () {
                     parameter: target,
                 },
                 (event) => {
-                    //this.mesh.position.copyFrom(this._lastGroundPos); // need to use copy or else they will be both pointing at the same thing & update together
-                    //console.log("collision:" + event.source.name)
-            
-
-                    // scene.removeMesh(event.source.trail);
-                    // (event.source.trail).dispose()
-
-                    // scene.removeMesh(event.source);
-                    // (event.source).dispose()
-                    // event.source = null;
                     event.source.simulating = false;
                     event.source.vel.set(0, 0, 0);
-
                 },
             ),
         );
-
         obstacles.forEach((obstacle, index) => {
-           
-        
             box1.actionManager.registerAction(
                 new BABYLON.ExecuteCodeAction(
                     {
@@ -255,7 +270,7 @@ var createScene = async function () {
                     },
                     (event) => {
                         //this.mesh.position.copyFrom(this._lastGroundPos); // need to use copy or else they will be both pointing at the same thing & update together
-                        console.log("obstacle:" + event.source.name)
+                        //console.log("obstacle:" + event.source.name)
                         event.source.simulating = false;
                         event.source.vel.set(0, 0, 0);
                     },
@@ -269,7 +284,21 @@ var createScene = async function () {
 }
     
 
-//grav
+// Cannon
+
+var cannon = BABYLON.MeshBuilder.CreateCylinder("cannon", {diameterTop:0.2, diameterBottom: 0, height: 0.4, tessellation: 20}, scene);
+var myMaterial = new BABYLON.StandardMaterial("myMaterial", scene);
+myMaterial.diffuseColor = new BABYLON.Color3(1, 0, 1);
+myMaterial.ambientColor = new BABYLON.Color3(1, 0, 1);
+myMaterial.emissiveColor = new BABYLON.Color3(1, 1, 1);
+cannon.material = myMaterial;
+cannon.isVisible = true;
+cannon.position.copyFrom(cannonPos);
+
+
+
+
+// grav
 
 var materialAmiga = new BABYLON.StandardMaterial("amiga", scene);
 //materialAmiga.diffuseTexture = new BABYLON.Texture("/textures/amiga.jpg", scene);
@@ -278,20 +307,15 @@ materialAmiga.emissiveColor = new BABYLON.Color3(0.8, 0.8, 0.2);
 // materialAmiga.diffuseTexture.vScale = 5;
 
 var orbs = [];
-for (var x = 0; x < 2; x++) {
-
-    var orb = BABYLON.Mesh.CreateSphere("Orb1", 16, 0.5, scene);
+level.orbs.forEach((o, index) => {
+    var orb = BABYLON.Mesh.CreateSphere("Orb1", 16, 0.3, scene);
     //orb.material = materialAmiga;
     orb.material = materialAmiga;
-    orb.position = new BABYLON.Vector3(-3 + 4 * x, 4+x, 7);
+    orb.position = new BABYLON.Vector3(0 + 2 * index, 4 + index, 7);
     orb.mass = 1;
-
     //gl.addIncludedOnlyMesh(orb)
-
     orbs.push(orb)
-}
-
-    
+})
         
 
 
@@ -366,28 +390,160 @@ scene.onPointerDown = function (event, pickResult){
 
 
 
+// Controllers
+
+let observers = {};
+    let meshesUnderPointer = {};
+    const tmpVec = new BABYLON.Vector3();
+    const tmpRay = new BABYLON.Ray();
+    tmpRay.origin = new BABYLON.Vector3();
+    tmpRay.direction = new BABYLON.Vector3();
+    let lastTimestamp = 0;
+    const oldPos = new BABYLON.Vector3();
+
+
+
+
+
+
+
+
+var leftController;
+var rightController ;
+
+var leftTarget;
+var rightTarget ;
 
 xr.input.onControllerAddedObservable.add((controller) => {
     controller.onMotionControllerInitObservable.add((motionController) => {
         
-    if (motionController.handness === 'left') {
-            const xr_ids = motionController.getComponentIds();
+       
+
+        controller.onMeshLoadedObservable.add((mesh) => {
+                //  if (isLeft) leftController = mesh;
+                //  else rightController = mesh;
+
+            var box1 = BABYLON.MeshBuilder.CreateBox("control-box-" + motionController.handness,
+            { width: 0.1, height: 0.1, depth: 0.1 }, scene);
+
+            mesh.addChild(box1)
+            box1.position = new BABYLON.Vector3(0,-2,-1.5);
+            console.log("Add hand mesh.")
             
-            let triggerComponent = motionController.getComponent(xr_ids[0]);//xr-standard-trigger
-            triggerComponent.onButtonStateChangedObservable.add(() => {
-                if (triggerComponent.pressed) {
-                    //Box_Left_Trigger.scaling= new BABYLON.Vector3(1.2,1.2,1.2);
-                    startSim()
-                }else{
-                    //Box_Left_Trigger.scaling= new BABYLON.Vector3(1,1,1);
-                
+            if (motionController.handness === 'left') {
+                leftTarget = box1;
+            }else{
+                rightTarget = box1;
+            }
+             
+        });
+
+
+        
+
+
+        const xr_ids = motionController.getComponentIds();
+        
+        let triggerComponent = motionController.getComponent(xr_ids[0]);//xr-standard-trigger
+        triggerComponent.onButtonStateChangedObservable.add(() => {
+            if (triggerComponent.pressed) {
+                //Box_Left_Trigger.scaling= new BABYLON.Vector3(1.2,1.2,1.2);
+                startSim()
+            }else{
+                //Box_Left_Trigger.scaling= new BABYLON.Vector3(1,1,1);
+            }
+        });
+
+        // khttps://playground.babylonjs.com/#B922X8#19
+
+        // is squeeze available?
+        const squeeze = motionController.getComponentOfType('squeeze');
+        if (squeeze) {
+            // check its state and handle state changes
+            squeeze.onButtonStateChangedObservable.add(() => {
+                // pressed was changed
+                if (squeeze.changes.pressed) {
+                    // is it pressed?
+                    if (squeeze.pressed) {
+
+                        console.log("sqeeze pressed")
+                        // animate position
+                        controller.getWorldPointerRayToRef(tmpRay, true);
+                        tmpRay.direction.scaleInPlace(1.5);
+                        const position = controller.grip ? controller.grip.position : controller.pointer.position;
+
+                        let mesh = scene.meshUnderPointer;
+                        if (xr.pointerSelection.getMeshUnderPointer) {
+                            mesh = xr.pointerSelection.getMeshUnderPointer(controller.uniqueId);
+                        }
+                        //if (mesh && mesh !== ground && mesh.physicsImpostor) {
+                        if (mesh && mesh !== ground && mesh != skyBox) {
+                            console.log("mesh:" + mesh.name)
+
+                            if (!mesh) return;
+                            meshesUnderPointer[controller.uniqueId] = mesh;
+                            controller.getWorldPointerRayToRef(tmpRay, true);
+                                //console.log("ray:" + tmpRay.direction.x)
+
+                               
+
+                            // meshesUnderPointer[controller.uniqueId].position.copyFrom(position);
+                            // meshesUnderPointer[controller.uniqueId].position.addInPlace(tmpRay.direction);
+
+
+                            const animatable = BABYLON.Animation.CreateAndStartAnimation('meshmove',
+                                mesh, 'DISABLE-position', 30, 15, 
+
+                                mesh.position.clone(),
+                                position.add(tmpRay.direction),
+
+                                BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
+                                new BABYLON.BezierCurveEase(0.3, -0.75, 0.7, 1.6), () => {
+                                    if (!mesh) return;
+                                    meshesUnderPointer[controller.uniqueId] = mesh;
+                                    observers[controller.uniqueId] = xr.baseExperience.sessionManager.onXRFrameObservable.add(() => {
+                                        // const delta = (xr.baseExperience.sessionManager.currentTimestamp - lastTimestamp);
+                                        // lastTimestamp = xr.baseExperience.sessionManager.currentTimestamp;
+                                        // controller.getWorldPointerRayToRef(tmpRay, true);
+                                        // console.log("ray:" + tmpRay.direction.x)
+                                        // //tmpRay.direction.scaleInPlace(1.5);
+                                        // //tmpRay.direction.scaleInPlace(tmpRay.length);
+                                        // const position = controller.grip ? controller.grip.position : controller.pointer.position;
+                                        // meshesUnderPointer[controller.uniqueId].position.copyFrom(position);
+                                        // meshesUnderPointer[controller.uniqueId].position.addInPlace(tmpRay.direction);
+                                        // oldPos.copyFrom(meshesUnderPointer[controller.uniqueId].position);
+
+                                        var worldMatrix = rightTarget.getWorldMatrix();
+                                        var worldquatRotation =  new BABYLON.Quaternion();
+                                        var worldposition = new BABYLON.Vector3();
+                                        var worldscale = new BABYLON.Vector3();
+
+                                        worldMatrix.decompose(worldscale, worldquatRotation, worldposition);
+                                                                        
+                                        console.log("target:" + rightTarget.position.y)
+                                        console.log("target w:" + worldposition.y)
+
+                                        meshesUnderPointer[controller.uniqueId].position.copyFrom(worldposition);
+
+                                    })
+                                });
+
+                        }//if mesh
+
+
+                    } else {//squeeze pressed
+                        // throw the object
+                        if (observers[controller.uniqueId] && meshesUnderPointer[controller.uniqueId]) {
+                            xr.baseExperience.sessionManager.onXRFrameObservable.remove(observers[controller.uniqueId]);
+                            observers[controller.uniqueId] = null;
+                            //meshesUnderPointer[controller.uniqueId].physicsImpostor.setLinearVelocity(tmpVec);
+                        }
+                    }
                 }
             });
-            
         }
-
-    })
-
+    
+    });
 });
 
 
