@@ -57,18 +57,7 @@
         var scene = null;
         var sceneToRender = null;
         var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
-        /**
-         * Physics WebXR playground.
-         * Objects can be picked using the squeeze button of the left controller (if available) and can be thrown.
-         * The left trigger resets the scene, right trigger shoots a bullet straight.
-         * 
-         * Both hands and the headset have impostors, so you can touch the objects, move them, headbutt them.
-         * 
-         * Use the boxing area in the center to understand how the hand and head impostors work.
-         * 
-         * Created by Raanan Weber (@RaananW)
-         */
-        
+
         var createScene = async function () {
         
             // This creates a basic Babylon Scene object (non-mesh)
@@ -134,21 +123,26 @@
 
             var rocks = [];
            
-            for (var z = 0; z < 5; z++) {
-                var d = 0.2;
-                var box1 = BABYLON.MeshBuilder.CreateBox("rock",
-                    { width: d, height: d, depth: d }, scene);
-                box1.position.x = 1;
-                box1.position.y = (z* 1.01 * d) ;
-                box1.position.z = 3.5;
-                box1.material = greenMat;
-         
+            for (var x = 0; x < 2; x++) {
+                for (var z = 0; z < 2; z++) {
+                for (var y = 0; y < 5; y++) {
+                   
 
-                box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1,
-                    BABYLON.PhysicsImpostor.BoxImpostor,
-                    { mass: 1, friction: 0.1, restitution: 0.5 }, scene);
-                    rocks.push(box1);
-            }
+                        var d = 0.2;
+                        var box1 = BABYLON.MeshBuilder.CreateBox("rock",
+                            { width: d, height: d, depth: d }, scene);
+                        box1.position.x = 1 + x * d * 1.1;
+                        box1.position.z = 3.5 + z * d * 1.1;
+                        box1.position.y = 0 + y * d * 1.1  ;
+                        
+                        box1.material = greenMat;
+                
+
+                        box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1,
+                            BABYLON.PhysicsImpostor.BoxImpostor,
+                            { mass: 1, friction: 0.1, restitution: 0.1 }, scene);
+                            rocks.push(box1);
+            }}}
         
 
 
