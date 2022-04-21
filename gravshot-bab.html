@@ -3,7 +3,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-        <title>Babylon.js sample code</title>
+        <title>Grav Shot</title>
 
         <!-- Babylon.js -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
@@ -47,6 +47,11 @@ var trailMeshes = [];
 var obstacles = [];
 
 
+var options = {G: 0.1,
+                V: 0.1,
+                TRAIL_LENGTH: 100,
+            };
+
 var level ={
     cannon: {
         x: -1,
@@ -54,36 +59,37 @@ var level ={
         z: 2
     }, 
     target: {
-        x: -2,
-        y: 1,
+        x: -1,
+        y: 2,
         z: 3,
-        width:0.1,
-        height:0.1,
+        // z: 2.1,
+        width:0.5,
+        height:0.5,
         depth: 0.5
     }, 
     obstacles: [
         {
-            x: 0,
+            x: 1,
             y: 1,
             z: 2,
-            width: 0.1,
+            width: 1,
             height: 0.1,
-            depth: 0.1
+            depth: 1
         },
-        {
-            x: 0,
-            y: 2,
-            z: 2,
-            width: 0.1,
-            height: 0.1,
-            depth: 0.1
-        }
+        // {
+        //     x: 1,
+        //     y: 2,
+        //     z: 2,
+        //     width: 0.1,
+        //     height: 0.1,
+        //     depth: 0.1
+        // }
     ],
     orbs: [
         {
             x: 1,
-            y: 2,
-            z: 2,
+            y: 3,
+            z: 5,
 
         },
 
@@ -110,19 +116,11 @@ var engine = null;
 var scene = null;
 var sceneToRender = null;
 var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
-/**
- * Physics WebXR playground.
- * Objects can be picked using the squeeze button of the left controller (if available) and can be thrown.
- * The left trigger resets the scene, right trigger shoots a bullet straight.
- * 
- * Both hands and the headset have impostors, so you can touch the objects, move them, headbutt them.
- * 
- * Use the boxing area in the center to understand how the hand and head impostors work.
- * 
- * Created by Raanan Weber (@RaananW)
- */
+
+var mode = "PAUSED" // "PAUSED"
 
 
+ var header = new BABYLON.GUI.TextBlock();
 
 var createScene = async function () {
 
@@ -132,8 +130,13 @@ var createScene = async function () {
     const physicsPlugin = new BABYLON.CannonJSPlugin();
     scene.enablePhysics(gravityVector, physicsPlugin);
 
-    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 2, 0), scene);
-    camera.setTarget(new BABYLON.Vector3(0, 4, 400));
+        // GUI
+
+
+
+
+    var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 2, -1), scene);
+    camera.setTarget(new BABYLON.Vector3(0, 2, 400));
     camera.attachControl(canvas, true);
 
     var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
@@ -165,6 +168,21 @@ var createScene = async function () {
     target.position = new BABYLON.Vector3(t.x, t.y, t.z);
     target.mass = 1;
 
+    // GUI
+    var plane = BABYLON.Mesh.CreatePlane("plane", 1);
+    plane.setParent(target)
+    plane.position = new BABYLON.Vector3(0, 0.4, 0)
+    var advancedTexture = BABYLON.GUI.AdvancedDynamicTexture.CreateForMesh(plane);
+    var panel = new BABYLON.GUI.StackPanel();    
+    advancedTexture.addControl(panel);  
+    header.text = "0%";
+    header.height = "100px";
+    header.color = "grey";
+    header.textHorizontalAlignment = BABYLON.GUI.Control.HORIZONTAL_ALIGNMENT_CENTER;
+    header.fontSize = "120"
+    panel.addControl(header); 
+
+
 
     //var o = level.obstacles[0];
     level.obstacles.forEach((o, index) => {
@@ -178,7 +196,9 @@ var createScene = async function () {
 
     const startSim = function(){
 
-
+        hitCount = 0;
+        hitPercent = 0;
+        header.text = "0%";
 
             // towers
 
@@ -204,7 +224,7 @@ var createScene = async function () {
         box1.position.copyFrom(cannonPos)
 
         var vel = new BABYLON.Vector3(Rnd(), Rnd(), Rnd()).normalize();
-        const V = 0.05;
+        const V = options.V;
         vel = vel.multiplyByFloats(V, V, V);
         box1.vel = vel;
 
@@ -222,7 +242,7 @@ var createScene = async function () {
         //https://doc.babylonjs.com/divingDeeper/mesh/trailMesh
 
 
-        var trail = new BABYLON.TrailMesh('orb trail', box1, scene, 0.05, 200, true);
+        var trail = new BABYLON.TrailMesh('orb trail', box1, scene, 0.05, options.TRAIL_LENGTH, true);
         
         var sourceMat = new BABYLON.StandardMaterial('sourceMat', scene);
         //var color = new BABYLON.Color3.Red();
@@ -254,6 +274,16 @@ var createScene = async function () {
                 (event) => {
                     event.source.simulating = false;
                     event.source.vel.set(0, 0, 0);
+                    hitCount++;
+                    hitPercent = parseInt(100 * hitCount / towerMeshes.length);
+                    header.text = hitPercent + "%";
+                    if (hitPercent>50){
+                        header.color = "yellow";
+                    }
+                    if (hitPercent>75){
+                        header.color = "lime";
+                    }
+
                 },
             ),
         );
@@ -307,7 +337,7 @@ level.orbs.forEach((o, index) => {
     var orb = BABYLON.Mesh.CreateSphere("Orb1", 16, 0.3, scene);
     //orb.material = materialAmiga;
     orb.material = materialAmiga;
-    orb.position = new BABYLON.Vector3(0 + 2 * index, 4 + index, 7);
+    orb.position = new BABYLON.Vector3(o.x, o.y, o.z);
     orb.mass = 1;
     //gl.addIncludedOnlyMesh(orb)
     orbs.push(orb)
@@ -332,20 +362,24 @@ const xrPhysics = xr.baseExperience.featuresManager.enableFeature(BABYLON.WebXRF
     enableHeadsetImpostor: true
 });
 
-var options = {G: 0.01};
+var renderLoop =0;
 
 scene.registerBeforeRender(function () {
     //Your code here
     //orb.position.x += 0.05;
+    renderLoop++;
+    //header.text = "100%-" + renderLoop;
 
     towerMeshes.forEach((mote, index) => {
 
         if (mote.simulating){
 
         
-            mote.vel.addInPlace(mote.accel);
-            mote.position.addInPlace(mote.vel);
-            mote.accel.set(0,0,0)
+            if (mode=="RUNNING"){
+                mote.vel.addInPlace(mote.accel);
+                mote.position.addInPlace(mote.vel);
+                mote.accel.set(0,0,0)
+            }
 
             //determine acceleration based on orb.
             orbs.forEach((orb, index) => {
@@ -373,7 +407,7 @@ scene.registerBeforeRender(function () {
 scene.onPointerDown = function (event, pickResult){
     //left mouse click
     if(event.button == 0){
-        startSim()
+        //startSim()
         //return scene;
     };
 //right
@@ -420,7 +454,7 @@ xr.input.onControllerAddedObservable.add((controller) => {
                 //  else rightController = mesh;
 
             var box1 = BABYLON.MeshBuilder.CreateBox("control-box-" + motionController.handness,
-            { width: 0.1, height: 0.1, depth: 0.1 }, scene);
+            { width: 0.01, height: 0.01, depth: 0.01 }, scene);
 
             mesh.addChild(box1)
             box1.position = new BABYLON.Vector3(0,-2,-1.5);
@@ -440,20 +474,20 @@ xr.input.onControllerAddedObservable.add((controller) => {
 
         const xr_ids = motionController.getComponentIds();
         
-        let triggerComponent = motionController.getComponent(xr_ids[0]);//xr-standard-trigger
-        triggerComponent.onButtonStateChangedObservable.add(() => {
-            if (triggerComponent.pressed) {
-                //Box_Left_Trigger.scaling= new BABYLON.Vector3(1.2,1.2,1.2);
-                startSim()
-            }else{
-                //Box_Left_Trigger.scaling= new BABYLON.Vector3(1,1,1);
-            }
-        });
+        // let triggerComponent = motionController.getComponent(xr_ids[0]);//xr-standard-trigger
+        // triggerComponent.onButtonStateChangedObservable.add(() => {
+        //     if (triggerComponent.pressed) {
+        //         //Box_Left_Trigger.scaling= new BABYLON.Vector3(1.2,1.2,1.2);
+        //         startSim()
+        //     }else{
+        //         //Box_Left_Trigger.scaling= new BABYLON.Vector3(1,1,1);
+        //     }
+        // });
 
         // khttps://playground.babylonjs.com/#B922X8#19
 
         // is squeeze available?
-        const squeeze = motionController.getComponentOfType('squeeze');
+        const squeeze = motionController.getComponentOfType('trigger');
         if (squeeze) {
             // check its state and handle state changes
             squeeze.onButtonStateChangedObservable.add(() => {
@@ -472,11 +506,24 @@ xr.input.onControllerAddedObservable.add((controller) => {
                         if (xr.pointerSelection.getMeshUnderPointer) {
                             mesh = xr.pointerSelection.getMeshUnderPointer(controller.uniqueId);
                         }
-                        //if (mesh && mesh !== ground && mesh.physicsImpostor) {
+                        
                         if (mesh && mesh !== ground && mesh != skyBox) {
                             console.log("mesh:" + mesh.name)
 
+                            if (mesh && mesh == cannon){
+                                if (mode=="RUNNING"){
+                                    mode="PAUSED"
+                                }else{
+                                    mode="RUNNING"
+                                    startSim();
+                                }
+                                
+                                return;
+                            }
+
                             if (!mesh) return;
+
+
                             meshesUnderPointer[controller.uniqueId] = mesh;
                             controller.getWorldPointerRayToRef(tmpRay, true);
                                 //console.log("ray:" + tmpRay.direction.x)
@@ -498,16 +545,6 @@ xr.input.onControllerAddedObservable.add((controller) => {
                                     if (!mesh) return;
                                     meshesUnderPointer[controller.uniqueId] = mesh;
                                     observers[controller.uniqueId] = xr.baseExperience.sessionManager.onXRFrameObservable.add(() => {
-                                        // const delta = (xr.baseExperience.sessionManager.currentTimestamp - lastTimestamp);
-                                        // lastTimestamp = xr.baseExperience.sessionManager.currentTimestamp;
-                                        // controller.getWorldPointerRayToRef(tmpRay, true);
-                                        // console.log("ray:" + tmpRay.direction.x)
-                                        // //tmpRay.direction.scaleInPlace(1.5);
-                                        // //tmpRay.direction.scaleInPlace(tmpRay.length);
-                                        // const position = controller.grip ? controller.grip.position : controller.pointer.position;
-                                        // meshesUnderPointer[controller.uniqueId].position.copyFrom(position);
-                                        // meshesUnderPointer[controller.uniqueId].position.addInPlace(tmpRay.direction);
-                                        // oldPos.copyFrom(meshesUnderPointer[controller.uniqueId].position);
 
                                         var worldMatrix = rightTarget.getWorldMatrix();
                                         var worldquatRotation =  new BABYLON.Quaternion();
@@ -516,8 +553,8 @@ xr.input.onControllerAddedObservable.add((controller) => {
 
                                         worldMatrix.decompose(worldscale, worldquatRotation, worldposition);
                                                                         
-                                        console.log("target:" + rightTarget.position.y)
-                                        console.log("target w:" + worldposition.y)
+                                        // console.log("target:" + rightTarget.position.y)
+                                        // console.log("target w:" + worldposition.y)
 
                                         meshesUnderPointer[controller.uniqueId].position.copyFrom(worldposition);
 

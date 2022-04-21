@@ -3,7 +3,7 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
-        <title>Babylon.js sample code</title>
+        <title>Kong</title>
 
         <!-- Babylon.js -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.6.2/dat.gui.min.js"></script>
@@ -50,6 +50,9 @@
             });
         }
 
+        const INCOMING_SPEED = 10;
+        const THROW_SPEED = 100;
+
         var engine = null;
         var scene = null;
         var sceneToRender = null;
@@ -70,60 +73,117 @@
         
             // This creates a basic Babylon Scene object (non-mesh)
             var scene = new BABYLON.Scene(engine);
-            const gravityVector = new BABYLON.Vector3(0, -9.8, 0);
+            // const gravityVector = new BABYLON.Vector3(0, -9.8, 0);
+            const gravityVector = new BABYLON.Vector3(0, -2.0, 0);
             const physicsPlugin = new BABYLON.CannonJSPlugin();
             scene.enablePhysics(gravityVector, physicsPlugin);
         
-            var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 10, 80), scene);
+            var camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 2, 0), scene);
             camera.setTarget(new BABYLON.Vector3(0, 10, 400));
             camera.attachControl(canvas, true);
         
             var light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
-            light.intensity = 0.7;
+            light.intensity = 0.3;
         
             var environment = scene.createDefaultEnvironment({ createGround: false, skyboxSize: 1000 });
-            environment.setMainColor(BABYLON.Color3.FromHexString("#74b9ff"));
-        
+            //environment.setMainColor(BABYLON.Color3.FromHexString("#74b9ff"));
+            environment.setMainColor(BABYLON.Color3.FromHexString("#999999"));
+            var skyBox = scene.getNodeByName("BackgroundSkybox")
+
             var ground = BABYLON.MeshBuilder.CreateGround("ground", { width: 1000, height: 1000 }, scene);
             ground.physicsImpostor = new BABYLON.PhysicsImpostor(ground, BABYLON.PhysicsImpostor.BoxImpostor, { mass: 0, friction: 0.8, restitution: 0.5, disableBidirectionalTransformation: true }, scene);
             ground.checkCollisions = true;
             ground.material = new BABYLON.GridMaterial("mat", scene);
         
-
             // towers
-            // var towerMeshes = [];
-            // for (var x = 0; x < 7; x++) {
-            //     for (var z = 0; z < 7; z++) {
-            //         var box1 = BABYLON.MeshBuilder.CreateBox("towerBox",
-            //             { width: 2, height: 2, depth: 2 }, scene);
-            //         box1.position.x = (x - 4) * 6;
-            //         box1.position.y = 2 + z * 2;
-            //         box1.position.z = 100;
-            //         box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1,
-            //             BABYLON.PhysicsImpostor.BoxImpostor,
-            //             { mass: 1, friction: 0.5, restitution: 0 }, scene);
-            //         towerMeshes.push(box1);
-            //     }
-            // }
+
+            var whiteMat = new BABYLON.StandardMaterial('whiteMat', scene);
+            var color = new BABYLON.Color3.FromHexString("#bbbbbb");
+            whiteMat.emissiveColor =
+            whiteMat.diffuseColor = color;
+
+            var towerMeshes = [];
+            for (var x = 0; x < 7; x++) {
+                for (var z = 0; z < 7; z++) {
+                    var height = Math.random() * 2
+                    var box1 = BABYLON.MeshBuilder.CreateBox("towerBox",
+                        { width: 0.5, height: height, depth: 0.5 }, scene);
+                    box1.position.x = (x - 4) * 2;
+                    box1.position.y = height/2 + 0.01;
+                    box1.position.z = 12 + (z - 4) * 2;
+                    box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1,
+                        BABYLON.PhysicsImpostor.BoxImpostor,
+                        { mass: 1, friction: 0.1, restitution: 0.5 }, scene);
+                    towerMeshes.push(box1);
+                    box1.material = whiteMat;
+                }
+            }
+
+
+            var greenMat = new BABYLON.StandardMaterial('greenMat', scene);
+            var color = new BABYLON.Color3.FromHexString("#006600")
+            greenMat.emissiveColor =
+            greenMat.diffuseColor = color;
+
+            var blackMat = new BABYLON.StandardMaterial('blackMat', scene);
+            color = new BABYLON.Color3.FromHexString("#000000")
+            blackMat.emissiveColor =
+            blackMat.diffuseColor = color;
+            //blueMat.specularColor = new BABYLON.Color3.Black();
+            
+
+            var rocks = [];
+           
+            for (var z = 0; z < 5; z++) {
+                var d = 0.2;
+                var box1 = BABYLON.MeshBuilder.CreateBox("rock",
+                    { width: d, height: d, depth: d }, scene);
+                box1.position.x = 1;
+                box1.position.y = (z* 1.01 * d) ;
+                box1.position.z = 3.5;
+                box1.material = greenMat;
+         
+
+                box1.physicsImpostor = new BABYLON.PhysicsImpostor(box1,
+                    BABYLON.PhysicsImpostor.BoxImpostor,
+                    { mass: 1, friction: 0.1, restitution: 0.5 }, scene);
+                    rocks.push(box1);
+            }
+        
+
 
             var incomings = [];
             for (var i = 0; i < 1; i++) {
                 
-                var income = BABYLON.MeshBuilder.CreateBox("Incoming",
-                    { width: 2, height: 2, depth: 2 }, scene);
-                income.position.x = 1;
-                income.position.y = 5;
-                income.position.z = 5;
-                income.physicsImpostor = new BABYLON.PhysicsImpostor(income,
-                    BABYLON.PhysicsImpostor.BoxImpostor,
-                    { mass: 1, friction: 0.5, restitution: 0 }, scene);
-                
-                // const vec = new BABYLON.Vector3(0,0,-0.1);
-                // income.physicsImpostor.setLinearVelocity(vec.scale(1));
-
-                incomings.push(income);
+                addIncoming()
             
             }
+
+            function addIncoming(){
+                var income = BABYLON.MeshBuilder.CreateBox("Incoming",
+                    { width: 2, height: 2, depth: 2 }, scene);
+                var x = 4 * (Math.random() - 0.5)
+                income.position.x = x;
+                income.position.y = 10;
+                income.position.z = 50;
+                income.physicsImpostor = new BABYLON.PhysicsImpostor(income,
+                    BABYLON.PhysicsImpostor.BoxImpostor,
+                    { mass: 10, friction: 0.1, restitution: 0.1 }, scene);
+                const vec = new BABYLON.Vector3(0,0,-1);
+                income.physicsImpostor.setLinearVelocity(vec.scale(INCOMING_SPEED));
+
+
+                var greyMat = new BABYLON.StandardMaterial('greyMat', scene);
+                greyMat.emissiveColor = new BABYLON.Color3.FromHexString("#333399")
+                income.material = greyMat;
+
+                incomings.push(income);
+            }
+
+            //addIncoming();
+
+            setInterval(addIncoming,10000)
+        
         
         
             // enable xr
@@ -153,59 +213,40 @@
         
             const bullets = [];
         
-            // show how to use babylon's native pointer events to interact with the input source AND the mouse
-            scene.onPointerObservable.add((event) => {
-                if (event.type === BABYLON.PointerEventTypes.POINTERPICK) {
-                    const inputSource = xr.pointerSelection.getXRControllerByPointerId(event.event.pointerId);
-                    if (!inputSource || (inputSource && inputSource.motionController.handness === 'right')) {
-                        const bullet = BABYLON.MeshBuilder.CreateSphere('bullet', { diameter: 0.2 });
-                        // if (inputSource) {
-                        //     inputSource.getWorldPointerRayToRef(tmpRay);
-                        // }
-                        const ray = /*inputSource ? tmpRay :*/event.pickInfo.ray;
-                        ray.direction.scaleInPlace(0.2);
-                        bullet.position.copyFrom(ray.origin);
-                        bullet.position.addInPlace(ray.direction);
-                        bullet.physicsImpostor = new BABYLON.PhysicsImpostor(bullet, BABYLON.PhysicsImpostor.SphereImpostor, { mass: 3 });
-                        bullet.physicsImpostor.setLinearVelocity(ray.direction.scale(400));
-                    }
-                }
-            })
-        
+
+
+            var leftController;
+var rightController ;
+
+var leftTarget;
+var rightTarget ;
+
+//var
             // XR-way of interacting with the controllers for the left hand:
             xr.input.onControllerAddedObservable.add((controller) => {
                 controller.onMotionControllerInitObservable.add((motionController) => {
-                    if (motionController.handness === 'left') {
-                        motionController.getMainComponent().onButtonStateChangedObservable.add((component) => {
-                            if (component.changes.pressed) {
-                                if (component.pressed) {
 
-                                    //RESET
 
-                                    // for (var x = 0; x < 7; x++) {
-                                    //     for (var z = 0; z < 7; z++) {
-                                    //         const box1 = towerMeshes[x * 7 + z]
-                                    //         box1.position.x = (x - 4) * 6;
-                                    //         box1.position.y = 2 + z * 2;
-                                    //         box1.position.z = 100;
-                                    //         box1.rotationQuaternion = new BABYLON.Quaternion();
-                                    //         box1.physicsImpostor.setLinearVelocity(BABYLON.Vector3.Zero());
-                                    //         box1.physicsImpostor.setAngularVelocity(BABYLON.Vector3.Zero());
-                                    //     }
-                                    // }
-                                    let bullt;
-                                    while (bullt = bullets.pop()) {
-                                        bullt.dispose();
-                                    }
-                                    Object.keys(observers).forEach(id => {
-                                        xr.baseExperience.sessionManager.onXRFrameObservable.remove(observers[id]);
-                                        observers[id] = null;
-                                    });
-                                }
-                            }
-                        });
+                    controller.onMeshLoadedObservable.add((mesh) => {
+                            //  if (isLeft) leftController = mesh;
+                            //  else rightController = mesh;
+                        var box1 = BABYLON.MeshBuilder.CreateBox("control-box-" + motionController.handness,
+                        { width: 0.02, height: 0.02, depth: 0.02 }, scene);
+
+                        mesh.addChild(box1)
+                        box1.position = new BABYLON.Vector3(0,-0.15,-0.2);
+                        console.log("Add hand mesh.")
+                        
+                        if (motionController.handness === 'left') {
+                            leftTarget = box1;
+                        }else{
+                            rightTarget = box1;
+                        }
+                        
+                    });
+
                         // is squeeze available?
-                        const squeeze = motionController.getComponentOfType('squeeze');
+                        const squeeze = motionController.getComponentOfType('trigger');
                         if (squeeze) {
                             // check its state and handle state changes
                             squeeze.onButtonStateChangedObservable.add(() => {
@@ -213,53 +254,79 @@
                                 if (squeeze.changes.pressed) {
                                     // is it pressed?
                                     if (squeeze.pressed) {
+
+                                        console.log("sqeeze pressed")
+
                                         // animate position
                                         controller.getWorldPointerRayToRef(tmpRay, true);
                                         tmpRay.direction.scaleInPlace(1.5);
                                         const position = controller.grip ? controller.grip.position : controller.pointer.position;
         
+                                        console.log("a")
+
                                         let mesh = scene.meshUnderPointer;
                                         if (xr.pointerSelection.getMeshUnderPointer) {
                                             mesh = xr.pointerSelection.getMeshUnderPointer(controller.uniqueId);
                                         }
-                                        if (mesh && mesh !== ground && mesh.physicsImpostor) {
+
+                                        console.log("b")
+
+                                        // if (mesh && mesh.name==="rock" &&mesh !== ground &&  mesh != skyBox && mesh.physicsImpostor) {
+                                            if (mesh && mesh.name==="rock" && mesh.physicsImpostor) {
+                                            
+                                             console.log("c")
+
+                                            meshesUnderPointer[controller.uniqueId] = mesh;
+                                            controller.getWorldPointerRayToRef(tmpRay, true);
+
                                             const animatable = BABYLON.Animation.CreateAndStartAnimation('meshmove',
-                                                mesh, 'position', 30, 15, mesh.position.clone(),
+                                                mesh, 'DISABLE-position', 30, 15, 
+                                                mesh.position.clone(),
                                                 position.add(tmpRay.direction),
+
                                                 BABYLON.Animation.ANIMATIONLOOPMODE_CONSTANT,
                                                 new BABYLON.BezierCurveEase(0.3, -0.75, 0.7, 1.6), () => {
-                                                    if (!mesh) return;
+                                                if (!mesh) return;
                                                     meshesUnderPointer[controller.uniqueId] = mesh;
                                                     observers[controller.uniqueId] = xr.baseExperience.sessionManager.onXRFrameObservable.add(() => {
-                                                        const delta = (xr.baseExperience.sessionManager.currentTimestamp - lastTimestamp);
-                                                        lastTimestamp = xr.baseExperience.sessionManager.currentTimestamp;
-                                                        controller.getWorldPointerRayToRef(tmpRay, true);
-                                                        tmpRay.direction.scaleInPlace(1.5);
-                                                        const position = controller.grip ? controller.grip.position : controller.pointer.position;
-                                                        tmpVec.copyFrom(position);
-                                                        tmpVec.addInPlace(tmpRay.direction);
-                                                        tmpVec.subtractToRef(oldPos, tmpVec);
-                                                        tmpVec.scaleInPlace(1000 / delta);
-                                                        meshesUnderPointer[controller.uniqueId].position.copyFrom(position);
-                                                        meshesUnderPointer[controller.uniqueId].position.addInPlace(tmpRay.direction);
+                                                        
+                                                        //TODO Left and Right
+
+                                                        var worldMatrix = leftTarget.getWorldMatrix();
+                                                        var worldquatRotation =  new BABYLON.Quaternion();
+                                                        var worldposition = new BABYLON.Vector3();
+                                                        var worldscale = new BABYLON.Vector3();
+
+                                                        worldMatrix.decompose(worldscale, worldquatRotation, worldposition);
                                                         oldPos.copyFrom(meshesUnderPointer[controller.uniqueId].position);
+
+                                                        meshesUnderPointer[controller.uniqueId].position.copyFrom(worldposition);
+
                                                         meshesUnderPointer[controller.uniqueId].physicsImpostor.setLinearVelocity(BABYLON.Vector3.Zero());
                                                         meshesUnderPointer[controller.uniqueId].physicsImpostor.setAngularVelocity(BABYLON.Vector3.Zero());
                                                     })
                                                 });
-                                        }
+                                         }
                                     } else {
                                         // throw the object
+
                                         if (observers[controller.uniqueId] && meshesUnderPointer[controller.uniqueId]) {
                                             xr.baseExperience.sessionManager.onXRFrameObservable.remove(observers[controller.uniqueId]);
                                             observers[controller.uniqueId] = null;
-                                            meshesUnderPointer[controller.uniqueId].physicsImpostor.setLinearVelocity(tmpVec);
+
+                                            var speed = new BABYLON.Vector3().copyFrom(meshesUnderPointer[controller.uniqueId].position);
+                                            speed.subtractInPlace(oldPos)
+                                            speed.scaleInPlace(THROW_SPEED)
+                                            meshesUnderPointer[controller.uniqueId].physicsImpostor.setLinearVelocity(speed);
+
+                                            console.log('throw: pos:' + JSON.stringify(meshesUnderPointer[controller.uniqueId].position,null, 2))
+                                            console.log('throw: pos OLD:' + JSON.stringify(oldPos,null, 2))
                                         }
                                     }
                                 }
                             });
                         }
-                    }
+                   // }
                 })
             })
         
