@@ -52,11 +52,17 @@ var options = {G: 0.1,
                 TRAIL_LENGTH: 100,
             };
 
-var level ={
+var level_1 ={
+    goal: {
+        percent:80
+    }, 
     cannon: {
         x: -1,
         y: 0.5,
-        z: 2
+        z: 2,
+        numMotes: 1,
+        trailLength: 1000,
+        velocity: 0.05
     }, 
     target: {
         x: -1,
@@ -90,12 +96,13 @@ var level ={
             x: 1,
             y: 3,
             z: 5,
-
+            mass: 0.1,
         },
 
     ],
 }
 
+var level = level_1;
 
 
 
@@ -117,7 +124,7 @@ var scene = null;
 var sceneToRender = null;
 var createDefaultEngine = function() { return new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true,  disableWebGL2Support: false}); };
 
-var mode = "PAUSED" // "PAUSED"
+var mode = "RUNNING" // "PAUSED" // "RUNNING"
 
 
  var header = new BABYLON.GUI.TextBlock();
@@ -216,19 +223,21 @@ var createScene = async function () {
     })
     trailMeshes = [];
 
-    for (var x = 0; x < 5; x++) {
-    for (var z = 0; z < 5; z++) {
-        var box1 = BABYLON.MeshBuilder.CreateBox("mote " + x + " " + z,
+    for (var i = 0; i < level.cannon.numMotes; i++) {
+
+        var box1 = BABYLON.MeshBuilder.CreateBox("mote " + i + " " ,
             { width: 0.1, height: 0.1, depth: 0.1 }, scene);
         
         box1.position.copyFrom(cannonPos)
 
         var vel = new BABYLON.Vector3(Rnd(), Rnd(), Rnd()).normalize();
-        const V = options.V;
-        vel = vel.multiplyByFloats(V, V, V);
+        
+        const velocity = level.cannon.velocity || options.V;
+
+        vel = vel.multiplyByFloats(velocity, velocity, velocity);
         box1.vel = vel;
 
-        var launcherDir = new BABYLON.Vector3(0,V,0)
+        var launcherDir = new BABYLON.Vector3(0,velocity,0)
         //mote.vel.lerp(launcherDir, 0.7).setLength(0.005)
         box1.vel = BABYLON.Vector3.Lerp(launcherDir, box1.vel, 0.1)
 
@@ -241,8 +250,9 @@ var createScene = async function () {
         //https://playground.babylonjs.com/#1F4UET#33
         //https://doc.babylonjs.com/divingDeeper/mesh/trailMesh
 
+        var trailLength = level.cannon.trailLength || options.TRAIL_LENGTH;
 
-        var trail = new BABYLON.TrailMesh('orb trail', box1, scene, 0.05, options.TRAIL_LENGTH, true);
+        var trail = new BABYLON.TrailMesh('orb trail', box1, scene, 0.05, trailLength, true);
         
         var sourceMat = new BABYLON.StandardMaterial('sourceMat', scene);
         //var color = new BABYLON.Color3.Red();
@@ -305,7 +315,7 @@ var createScene = async function () {
         })
 
 
-        }
+        
     }
 }
     
@@ -338,7 +348,7 @@ level.orbs.forEach((o, index) => {
     //orb.material = materialAmiga;
     orb.material = materialAmiga;
     orb.position = new BABYLON.Vector3(o.x, o.y, o.z);
-    orb.mass = 1;
+    orb.mass = o.mass || ORB_MASS;
     //gl.addIncludedOnlyMesh(orb)
     orbs.push(orb)
 })
@@ -407,12 +417,12 @@ scene.registerBeforeRender(function () {
 scene.onPointerDown = function (event, pickResult){
     //left mouse click
     if(event.button == 0){
-        //startSim()
+        startSim()
         //return scene;
     };
 //right
     if(event.button == 1){
-        //startSim()
+        startSim()
         //return scene;
     };
     console.log("Mouse down")
@@ -452,7 +462,6 @@ xr.input.onControllerAddedObservable.add((controller) => {
         controller.onMeshLoadedObservable.add((mesh) => {
                 //  if (isLeft) leftController = mesh;
                 //  else rightController = mesh;
-
             var box1 = BABYLON.MeshBuilder.CreateBox("control-box-" + motionController.handness,
             { width: 0.01, height: 0.01, depth: 0.01 }, scene);
 
@@ -496,7 +505,13 @@ xr.input.onControllerAddedObservable.add((controller) => {
                     // is it pressed?
                     if (squeeze.pressed) {
 
+
                         console.log("sqeeze pressed")
+
+
+
+
+                        
                         // animate position
                         controller.getWorldPointerRayToRef(tmpRay, true);
                         tmpRay.direction.scaleInPlace(1.5);
@@ -528,11 +543,8 @@ xr.input.onControllerAddedObservable.add((controller) => {
                             controller.getWorldPointerRayToRef(tmpRay, true);
                                 //console.log("ray:" + tmpRay.direction.x)
 
-                               
-
                             // meshesUnderPointer[controller.uniqueId].position.copyFrom(position);
                             // meshesUnderPointer[controller.uniqueId].position.addInPlace(tmpRay.direction);
-
 
                             const animatable = BABYLON.Animation.CreateAndStartAnimation('meshmove',
                                 mesh, 'DISABLE-position', 30, 15, 
